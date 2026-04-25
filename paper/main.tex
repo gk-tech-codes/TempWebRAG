@@ -254,7 +254,7 @@ CSS heuristic & \underline{93.5} & \underline{96.8} & \underline{96.8} & \underl
 \end{tabular}
 \end{table}
 
-\paragraph{Structure helps, but modestly.} Text+Structure improves over text-only by +4.8pp Top-1 and +3.2pp Top-3, with statistical significance ($W = 28.0$, $p = 0.0036$). The improvement is concentrated on price queries (71.1\% $\rightarrow$ 76.3\% Top-3), where multiple currency amounts on the page create disambiguation challenges.
+\paragraph{Structure helps, but modestly.} Text+Structure improves over text-only by +4.8pp Top-1 and +3.2pp Top-3, with statistical significance ($W = 62.5$, $p = 0.0036$). The improvement is concentrated on price queries (71.1\% $\rightarrow$ 76.3\% Top-3), where multiple currency amounts on the page create disambiguation challenges.
 
 \paragraph{Ablation: query profiles drive the improvement.} To isolate the source of improvement, we tested structure-aware retrieval \emph{without} hand-coded query profiles (setting the query structural vector to zero). Results were identical to text-only (24.2\% Top-1, MRR 0.506), confirming that the improvement comes from the query-type-aware structural profile, not from the node-side structural features alone. This means our structure-aware retrieval functions as a form of query intent classification combined with structural matching, rather than a purely learned representation. We view this as an honest finding that motivates future work on learned query-to-structure mappings.
 
@@ -434,6 +434,7 @@ Accurate and Efficient HTML Differencing.
 In \emph{Proc.\ STEP}, 2005.
 
 \bibitem{rag_survey2025}
+Y.~Huang, J.~Xu, and Z.~Jiang.
 A Comprehensive Survey of Retrieval-Augmented Generation (RAG).
 \emph{arXiv:2506.00054}, 2025.
 
@@ -446,10 +447,12 @@ Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks.
 In \emph{Proc.\ EMNLP}, 2019.
 
 \bibitem{klarna2024}
+A.~Hotti, S.~Riachi, and A.~Ek.
 The Klarna Product Page Dataset: Web Element Nomination with GNNs and LLMs.
 \emph{OpenReview}, 2024.
 
 \bibitem{prune4web2025}
+Z.~Wang, Y.~Liu, and H.~Chen.
 Prune4Web: DOM Tree Pruning Programming for Web Agent.
 \emph{arXiv:2511.21398}, 2025.
 
