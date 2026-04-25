@@ -91,7 +91,7 @@ See paper Section 6 and `eval/results.md` for full discussion.
 @article{tempwebrag2026,
   title={Temporal Fact Extraction from Web Page DOM Evolution
          for Time-Aware Retrieval-Augmented Generation},
-  author={[Authors]},
+  author={Gaurav Kumar},
   year={2026}
 }
 ```

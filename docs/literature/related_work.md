@@ -66,7 +66,7 @@
 | AI Agent Product KG | arXiv | 2025 | LLM agents build product KGs | From text, not HTML DOM |
 | LLM-PKG | arXiv | 2024 | Product KG for recommendations | Not from web pages |
 | Hierarchical KG from Images | arXiv | 2024 | VLM+LLM for product KG from images | Images, not DOM |
-| COSMO (Amazon) | Amazon Science | 2024 | Large-scale e-commerce commonsense KG | Internal, not DOM-based |
+| COSMO | Industry | 2024 | Large-scale e-commerce commonsense KG | Industry system, not DOM-based |
 
 ## Category 9: Neurosymbolic AI (Theoretical Foundation)
 | Paper | Venue | Year | Key Contribution | Gap We Fill |

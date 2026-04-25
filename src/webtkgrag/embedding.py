@@ -342,7 +342,7 @@ def run_rigorous_evaluation():
     print(f"   1. All test pages are from the SAME website (books.toscrape.com)")
     print(f"   2. Visual modality is NOT included (no headless browser in this prototype)")
     print(f"   3. Only {ours['total']} test queries — need 100+ for statistical significance")
-    print(f"   4. Need structurally DIFFERENT sites (Amazon, eBay, Shopify) for cross-site test")
+    print(f"   4. Need structurally DIFFERENT sites (major e-commerce sites) for cross-site test")
     print(f"   5. Need comparison with HtmlRAG baseline (their code is open source)")
 
     print(f"\n{'='*70}")

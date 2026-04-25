@@ -125,7 +125,7 @@ The display price is inside `div.product_main` at depth 9. Table prices are insi
 
 ### Revised Claim for Paper
 - ~~"Sub-linear retrieval complexity"~~ → **"Structure-aware retrieval that prunes semantically irrelevant sections (navigation, footer, advertisements), improving precision without sacrificing recall"**
-- Speed improvement requires pages with large prunable sections (e.g., Amazon pages with 200+ recommendation items in sidebar)
+- Speed improvement requires pages with large prunable sections (e.g., large e-commerce pages with 200+ recommendation items in sidebar)
 
 ### Research Insight
 The original HtmlRAG paper's block-tree approach is more efficient because it merges nodes into blocks FIRST, then prunes blocks. Our node-level traversal has higher granularity but more overhead. For the paper, we should:
@@ -784,7 +784,7 @@ $99.99 (product price) from $0.00 (cart total). Structure features
 ### I14: JavaScript-rendered pages (SPA/React/Next.js)
 **Severity:** HIGH for real-world applicability.
 
-Modern e-commerce sites (Amazon, Walmart, Shopify) use JavaScript frameworks.
+Modern e-commerce sites (major e-commerce sites) use JavaScript frameworks.
 The raw HTML source contains `<div id="root"></div>` with no product data.
 BeautifulSoup parses the SOURCE, not the RENDERED DOM.
 
@@ -1253,7 +1253,7 @@ This is a 2-line fix that makes all imports instant.
    This proves the temporal KG actually HELPS the LLM, not just that we can extract facts.
 
 3. **One compelling case study (SHOULD HAVE)**
-   Track a real product (e.g., iPhone on Amazon) over 30 days.
+   Track a real product (e.g., a popular product on a major retailer) over 30 days.
    Show the temporal KG capturing a real Black Friday sale, a real
    stock-out event, a real price increase. One real example is worth
    100 simulated ones.
@@ -1311,7 +1311,7 @@ queries that no existing approach supports."
 ### I31: Toy sites ≠ real sites — the generalization gap is enormous
 **Quantified gap:**
 
-| Metric | Our test sites | Real Amazon/Walmart |
+| Metric | Our test sites | Real e-commerce sites |
 |--------|---------------|-------------------|
 | HTML size | 9-50K chars | 500K-2M chars |
 | DOM nodes | 75-528 | 5,000-15,000 |
@@ -1329,7 +1329,7 @@ industry would dismiss these results immediately.
 
 **The only honest path:** Acknowledge this explicitly in the paper as a
 limitation, AND add at least one test on a real site's saved HTML
-(e.g., from Common Crawl or a manually saved Amazon page).
+(e.g., from Common Crawl or a manually saved e-commerce page).
 
 
 ### I32: Missing systematic comparison table for related work
@@ -1560,7 +1560,7 @@ actually helps LLMs answer temporal queries.
 This is the experiment that converts our paper from "interesting prototype"
 to "convincing contribution." Everything else is secondary.
 
-**Blocked on:** Bedrock credentials (ada) + Wayback Machine crawling.
+**Blocked on:** Bedrock credentials (AWS CLI) + Wayback Machine crawling.
 
 ---
 

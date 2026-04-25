@@ -5,10 +5,10 @@ Connects all components into an end-to-end system:
   1. HTML → DOM Knowledge Graph (dom_parser)
   2. Structure-aware node embeddings (embedding)
   3. Temporal fact extraction (temporal)
-  4. LLM answer generation (Bedrock Claude or Mock)
+  4. LLM answer generation (Bedrock or Mock)
 
 Usage:
-  # With Bedrock (requires valid AWS credentials):
+  # With Bedrock (requires AWS credentials):
   python pipeline.py --mode bedrock
 
   # Mock mode (no credentials needed, simulates LLM):
@@ -380,7 +380,7 @@ def run_pipeline(mode="mock"):
   Temporal RAG: Tested with 3 snapshots, price/availability history in prompt
 
   To switch to Bedrock: python pipeline.py --mode bedrock
-  (requires valid AWS credentials via ada)
+  (requires valid AWS credentials)
 """)
 
 

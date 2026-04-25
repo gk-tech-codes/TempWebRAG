@@ -15,7 +15,7 @@ The entire claim of "cross-site generalization" is unsubstantiated.
 
 A reviewer will say: "Your structural features work because all pages have
 the same class names (product_main, pricing, etc.). Show me this works on
-Amazon, eBay, Walmart, and a random Shopify store — all with different HTML."
+major e-commerce sites (eBay, Walmart, Shopify), and a random Shopify store — all with different HTML."
 
 **Fix:** Test on at least 5 structurally different e-commerce sites.
 
@@ -65,7 +65,7 @@ scientific integrity, but the paper claims "sub-linear retrieval." We need
 to either fix the algorithm or change the claim.
 
 **Fix:** Already revised the claim. But should also test on pages with
-large prunable sections (Amazon with 200+ recommendation items).
+large prunable sections (large sites with 200+ recommendation items).
 
 ---
 

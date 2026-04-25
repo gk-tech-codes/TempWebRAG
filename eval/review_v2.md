@@ -157,7 +157,7 @@ structure-aware retrieval as a supporting contribution, not the main one.
 ## REVIEW 8: Scalability Concerns
 
 ### Untested:
-1. **Large pages (10K+ nodes).** Amazon product pages have 5,000-15,000
+1. **Large pages (10K+ nodes).** Large e-commerce product pages have 5,000-15,000
    DOM nodes. We tested max 528. Does it still work?
 2. **Many temporal snapshots.** We tested 3. What about 100 daily
    snapshots over 3 months? Does the KG become unwieldy?
