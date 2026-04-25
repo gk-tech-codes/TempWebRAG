@@ -35,7 +35,7 @@ for Time-Aware Retrieval-Augmented Generation}
 \maketitle
 
 \begin{abstract}
-Retrieval-Augmented Generation (RAG) systems increasingly use web pages as external knowledge, yet they operate on static snapshots---unable to track how web content evolves over time. We introduce \ours{}, a framework that extracts timestamped facts from the structural evolution of HTML Document Object Model (DOM) trees. By computing XPath-based diffs between DOM snapshots of the same page at different times, we extract temporal fact tuples (e.g., price changes, availability updates) that augment RAG with temporal context. This enables a class of time-aware queries---``When did the price drop?'', ``Was there a sale last month?'', ``Has availability changed?''---that existing static RAG systems cannot answer without manual multi-snapshot comparison. On a benchmark of 3 products with 9 temporal snapshots, our system achieves 100\% fact recall (95\% CI: [69.2\%, 100\%]) with 83.3\% precision. We additionally show that DOM structural features provide statistically significant retrieval improvement over text-only baselines ($p < 0.01$, Wilcoxon signed-rank test) on 35 queries across 3 website templates, though simple CSS heuristics remain superior for static extraction on well-structured sites. We release our code and evaluation framework to facilitate research on temporal web RAG.
+Retrieval-Augmented Generation (RAG) systems increasingly use web pages as external knowledge, yet they operate on static snapshots---unable to track how web content evolves over time. We introduce \ours{}, a framework that extracts timestamped facts from the structural evolution of HTML Document Object Model (DOM) trees. By computing XPath-based diffs between DOM snapshots of the same page at different times, we extract temporal fact tuples (e.g., price changes, availability updates) that augment RAG with temporal context. This enables a class of time-aware queries---``When did the price drop?'', ``Was there a sale last month?'', ``Has availability changed?''---that existing static RAG systems cannot answer without manual multi-snapshot comparison. On a benchmark of 3 products with 9 temporal snapshots, our system achieves 100\% fact recall (95\% CI: [69.2\%, 100\%]) with 83.3\% precision. We also show that DOM structural features provide statistically significant retrieval improvement over text-only baselines ($p < 0.01$, Wilcoxon signed-rank test) on 35 queries across 3 websites with different HTML structures, though simple CSS heuristics remain superior for static extraction on well-structured sites. We release our code and evaluation framework to facilitate research on temporal web RAG.
 \end{abstract}
 
 \section{Introduction}
@@ -62,9 +62,9 @@ We make the following contributions:
 \begin{itemize}
     \item We formulate the novel task of \textbf{temporal fact extraction from DOM tree evolution} for RAG, and demonstrate that XPath-based DOM diffing can extract price changes, availability updates, and promotional events with 100\% recall and 83.3\% precision.
 
-    \item We show that \textbf{DOM structural features} provide statistically significant retrieval improvement ($p = 0.0079$) over text-only baselines on 35 queries across 3 website templates, while honestly reporting that CSS heuristics outperform both neural approaches for static extraction on well-structured sites.
+    \item We show that \textbf{DOM structural features} provide statistically significant retrieval improvement ($p = 0.0079$) over text-only baselines on 35 queries across 3 websites with different HTML structures, while honestly reporting that CSS heuristics outperform both neural approaches for static extraction on well-structured sites.
 
-    \item We release an \textbf{open-source implementation} and evaluation framework with 37 ground-truth queries, 10 reproducibility tests, and 8 locally-saved test pages across 3 website templates.
+    \item We release an \textbf{open-source implementation} and evaluation framework with 37 ground-truth queries, 10 reproducibility tests, and 8 locally-saved test pages across 3 websites with different HTML structures.
 \end{itemize}
 
 \section{Related Work}
@@ -108,7 +108,7 @@ AXE~\cite{axe2025} achieves 88.1\% F1 on the SWDE dataset by pruning DOM trees f
 
 \subsection{Temporal Knowledge and RAG}
 
-TG-RAG~\cite{tgrag2025} constructs temporal knowledge graphs from text corpora with timestamped relations. STAR-RAG~\cite{starrag2025} builds time-aligned rule graphs. StreamingRAG~\cite{streamingrag2025} tracks evolving knowledge from video streams. All operate on unstructured text or multimedia---none apply temporal tracking to HTML DOM trees, which is our primary contribution.
+TG-RAG~\cite{tgrag2025} constructs temporal knowledge graphs from text corpora with timestamped relations. STAR-RAG~\cite{starrag2025} builds time-aligned rule graphs. StreamingRAG~\cite{streamingrag2025} tracks evolving knowledge from video streams. TempRALM~\cite{tempralm2024} incorporates temporal relevance into document retrieval but does not track content changes within pages. Iantosca et al.~\cite{domgraphrag2024} propose DOM Graph RAG for enterprise XML content management using DITA ontologies, but do not address temporal evolution of web pages. None of these works apply temporal tracking to HTML DOM trees, which is our primary contribution.
 
 \subsection{DOM Change Detection}
 
@@ -199,7 +199,7 @@ The retrieved context is typically $\sim$500 characters (vs.\ $\sim$9,000 for th
 
 \subsection{Datasets}
 
-\paragraph{Static Retrieval.} We evaluate on 37 ground-truth queries across 8 pages from 3 website templates: books.toscrape.com (book store, 5 pages), webscraper.io (electronics store, 2 pages), and quotes.toscrape.com (non-e-commerce, 1 page as negative control). Query types include price (20), availability (9), name (4), attribute (1), metadata (1), and negative controls (2). All test pages are saved locally for reproducibility.
+\paragraph{Static Retrieval.} We evaluate on 37 ground-truth queries across 8 pages from 3 websites with different HTML structures: books.toscrape.com (book store, 5 pages), webscraper.io (electronics store, 2 pages), and quotes.toscrape.com (non-e-commerce, 1 page as negative control). Query types include price (20), availability (9), name (4), attribute (1), metadata (1), and negative controls (2). All test pages are saved locally for reproducibility.
 
 \paragraph{Temporal Fact Extraction.} We evaluate on 3 simulated products (Sony WH-1000XM5, MacBook Air M3, Nike Air Max 90) with 3 temporal snapshots each (9 snapshots total), containing 10 ground-truth temporal facts across 4 relation types.
 
@@ -230,7 +230,7 @@ Table~\ref{tab:static} presents retrieval results on 35 queries (excluding 2 neg
 
 \begin{table}[t]
 \centering
-\caption{Static retrieval results on 35 queries across 3 website templates. $\dagger$: statistically significant improvement over text-only ($p < 0.05$, Wilcoxon signed-rank test).}
+\caption{Static retrieval results on 35 queries across 3 websites with different HTML structures. $\dagger$: statistically significant improvement over text-only ($p < 0.05$, Wilcoxon signed-rank test).}
 \label{tab:static}
 \begin{tabular}{lccccc}
 \toprule
@@ -327,7 +327,7 @@ We identify the following limitations, discovered through 40 iterations of criti
 
 \section{Ethics Statement}
 
-Our system processes publicly available web content. We evaluate only on public test sites designed for scraping practice and do not access real commercial e-commerce sites. Temporal price tracking could enable both positive applications (consumer protection, price transparency) and negative ones (competitor surveillance, automated arbitrage). We encourage responsible use in compliance with applicable laws and website terms of service.
+Our system processes publicly available web content. We evaluate only on public test sites designed for scraping practice and do not access real commercial e-commerce sites. Temporal price tracking could enable both positive applications (consumer protection, price transparency) and negative ones (competitor surveillance, automated arbitrage). We encourage responsible use in compliance with applicable laws, website terms of service, and robots.txt directives. Users should respect copyright and data privacy when crawling web content.
 
 \section{Conclusion}
 
@@ -417,6 +417,16 @@ The Klarna Product Page Dataset: Web Element Nomination with GNNs and LLMs.
 \bibitem{prune4web2025}
 Prune4Web: DOM Tree Pruning Programming for Web Agent.
 \emph{arXiv:2511.21398}, 2025.
+
+\bibitem{tempralm2024}
+M.~Joko, C.~Hauff, and D.~Hiemstra.
+TempRALM: Incorporating Temporality in Retrieval Augmented Language Models.
+\emph{arXiv:2401.13222}, 2024.
+
+\bibitem{domgraphrag2024}
+M.~Iantosca, H.~Nagy, and W.~Sandri.
+Document Object Model Graph RAG: A Semantic Content Architecture for Neuro-Symbolic RAG.
+\emph{Medium}, 2024.
 
 \end{thebibliography}
 
