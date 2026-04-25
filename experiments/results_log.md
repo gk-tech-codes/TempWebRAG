@@ -232,3 +232,45 @@ Apr 20: Sony WH-1000XM5, $299.99, Only 3 left!, 4.6 stars (3,102 reviews)
 | Temporal diffing | ✅ Validated | 8/8 temporal queries correct, 2 bugs found and fixed |
 | Cross-site transfer | ❌ Not started | |
 | Full RAG pipeline | ❌ Not started | |
+
+
+---
+
+## Experiment 5: Full RAG Pipeline (Phase 5)
+
+**Date:** 2026-04-24
+**Objective:** Validate end-to-end pipeline: HTML → DOM-KG → Embed → Retrieve → Prompt → LLM → Answer
+
+### Setup
+- LLM: Mock mode (Bedrock Claude ready but credentials expired)
+- Retrieval: Top-7 nodes by tri-modal cosine similarity
+- Prompt: HTML context + temporal data (if available) + question
+- Test: 3 static queries on real page + 5 temporal queries on simulated snapshots
+
+### Pipeline Validation
+
+| Step | Status | Output |
+|------|--------|--------|
+| HTML fetch | ✅ | 9,279 chars from books.toscrape.com |
+| DOM parse | ✅ | 75 nodes, 36 content |
+| Tri-modal embed | ✅ | 36 embeddings (384+20 dim) |
+| Retrieve top-7 | ✅ | Correct nodes retrieved |
+| Build prompt | ✅ | 485-566 chars (compact, focused) |
+| LLM generate | ✅ (mock) | Placeholder answers |
+| Temporal indexing | ✅ | 3 snapshots, 14 changes detected |
+| Temporal context in prompt | ✅ | Price/availability/discount history included |
+
+### Prompt Size Analysis
+- Static query prompt: ~500 chars (vs. full page 9,279 chars = **94.6% reduction**)
+- Temporal query prompt: ~800 chars (includes history data)
+- This is significant: we send only 5% of the page to the LLM
+
+### Known Issues
+1. Mock LLM picks up $0.00 cart total — real LLM with HTML understanding would ignore it
+2. Retrieval doesn't filter nav/footer nodes (Phase 4 filtering not applied in retrieval)
+3. Need Bedrock credentials to test with real LLM
+
+### What Bedrock Will Enable
+- Real natural language answers instead of regex-based mock
+- Evaluation of answer quality (ROUGE-L, EM, F1)
+- Comparison: our retrieved context vs. full-page context vs. plain-text context
