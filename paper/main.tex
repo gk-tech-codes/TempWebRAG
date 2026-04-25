@@ -210,7 +210,7 @@ The retrieved context is typically $\sim$500 characters (vs.\ $\sim$9,000 for th
 
 \subsection{Datasets}
 
-\paragraph{Static Retrieval.} We evaluate on 64 ground-truth queries across 8 pages from 3 websites with different HTML structures: books.toscrape.com (book store, 5 pages), webscraper.io (electronics store, 2 pages), and quotes.toscrape.com (non-e-commerce, 1 page as negative control). Query types include price (20), availability (9), name (4), attribute (1), metadata (1), and negative controls (2). All test pages are saved locally for reproducibility.
+\paragraph{Static Retrieval.} We evaluate on 64 ground-truth queries across 8 pages from 3 websites with different HTML structures: books.toscrape.com (book store, 5 pages), webscraper.io (electronics store, 2 pages), and quotes.toscrape.com (non-e-commerce, 1 page as negative control). Query types include price (20), availability (9), name (4), attribute (1), metadata (1), and negative controls (2). Note that multiple queries per page share the same DOM structure, introducing correlation; we report this as a limitation of our evaluation design. All test pages are saved locally for reproducibility.
 
 \paragraph{Temporal Fact Extraction.} We evaluate on 5 simulated products with 3 temporal snapshots each (15 snapshots total), containing 23 ground-truth temporal facts across 4 relation types (price, availability, discount, name). Note: temporal \emph{facts} (extracted data points) differ from temporal \emph{queries} (user questions); Table~\ref{tab:qtypes} shows query types.
 
@@ -228,7 +228,7 @@ For temporal queries, no baseline exists---this is the gap our work addresses.
 
 \subsection{Metrics}
 
-\paragraph{Static Retrieval.} Top-$k$ accuracy (proportion of queries where the correct node appears in the top $k$ results), Mean Reciprocal Rank (MRR), and average rank. Statistical significance via Wilcoxon signed-rank test.
+\paragraph{Static Retrieval.} Top-$k$ accuracy (proportion of queries where the correct node appears in the top $k$ results), Mean Reciprocal Rank (MRR), and average rank. Statistical significance via one-tailed Wilcoxon signed-rank test (testing whether text+structure ranks are lower than text-only ranks).
 
 \paragraph{Temporal Fact Extraction.} Precision (correct facts / total extracted facts), recall (correct facts / expected facts), and F1. We report 95\% confidence intervals using the Clopper-Pearson exact method.
 
@@ -241,7 +241,7 @@ Table~\ref{tab:static} presents retrieval results on 35 queries (excluding 2 neg
 
 \begin{table}[t]
 \centering
-\caption{Static retrieval results on 62 queries across 3 websites with different HTML structures. $\dagger$: statistically significant improvement over text-only ($p < 0.05$, Wilcoxon signed-rank test).}
+\caption{Static retrieval results on 62 queries across 3 websites with different HTML structures. $\dagger$: statistically significant improvement over text-only ($p < 0.05$, one-tailed Wilcoxon signed-rank test).}
 \label{tab:static}
 \begin{tabular}{lccccc}
 \toprule
