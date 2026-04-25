@@ -32,7 +32,7 @@ from webtkgrag.embedding import (
 def brute_force_retrieve(query: str, kg: DOMKnowledgeGraph, content_nodes: list, embeddings: dict, top_k: int = 5):
     """Score every node, return top-k. O(n) comparisons."""
     q_emb = encode_text_real(query)
-    # Pad to match tri-modal dim
+    # Pad to match structure-aware dim
     q_full = np.concatenate([q_emb, np.zeros(20, dtype=np.float32)])
     q_full = q_full / (np.linalg.norm(q_full) + 1e-8)
 

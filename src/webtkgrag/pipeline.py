@@ -1,12 +1,11 @@
 """
 Full RAG Pipeline — Query → Retrieve → LLM → Answer
 
-Connects all previous phases into an end-to-end system:
-  Phase 1: HTML → DOM Knowledge Graph
-  Phase 2: Tri-modal embeddings for each node
-  Phase 3: Confidence-guided tree traversal for retrieval
-  Phase 4: Temporal knowledge graph for time-aware queries
-  Phase 5: Feed retrieved context to LLM (Bedrock Claude) for answer generation
+Connects all components into an end-to-end system:
+  1. HTML → DOM Knowledge Graph (dom_parser)
+  2. Structure-aware node embeddings (embedding)
+  3. Temporal fact extraction (temporal)
+  4. LLM answer generation (Bedrock Claude or Mock)
 
 Usage:
   # With Bedrock (requires valid AWS credentials):
