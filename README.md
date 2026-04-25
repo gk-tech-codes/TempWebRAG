@@ -23,6 +23,7 @@ TempWebRAG extracts timestamped facts from the structural evolution of HTML DOM 
 |--------|-------|--------|
 | Recall | 100% | [85.2%, 100%] |
 | Precision | 70.0% | [55.4%, 82.1%] |
+| F1 | 82.4% | — |
 
 No existing RAG system, CSS heuristic, or web scraper can answer temporal queries.
 
