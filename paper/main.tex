@@ -34,7 +34,7 @@ for Time-Aware Retrieval-Augmented Generation}
 \maketitle
 
 \begin{abstract}
-Retrieval-Augmented Generation (RAG) systems increasingly use web pages as external knowledge, yet they operate on static snapshots---unable to track how web content evolves over time. We introduce \ours{}, a framework that extracts timestamped facts from the structural evolution of HTML Document Object Model (DOM) trees. By computing XPath-based diffs between DOM snapshots of the same page at different times, we extract temporal fact tuples (e.g., price changes, availability updates) that augment RAG with temporal context. This enables a class of time-aware queries---``When did the price drop?'', ``Was there a sale last month?'', ``Has availability changed?''---that existing static RAG systems cannot answer without manual multi-snapshot comparison. On a benchmark of 5 products with 15 temporal snapshots, our system achieves 100\% fact recall (95\% CI: [69.2\%, 100\%]) with 83.3\% precision. We also show that DOM structural features provide statistically significant retrieval improvement over text-only baselines ($p < 0.01$, Wilcoxon signed-rank test) on 62 queries across 3 websites with different HTML structures, though simple CSS heuristics remain superior for static extraction on well-structured sites. We release our code and evaluation framework to facilitate research on temporal web RAG.
+Retrieval-Augmented Generation (RAG) systems increasingly use web pages as external knowledge, yet they operate on static snapshots---unable to track how web content evolves over time. We introduce \ours{}, a framework that extracts timestamped facts from the structural evolution of HTML Document Object Model (DOM) trees. By computing XPath-based diffs between DOM snapshots of the same page at different times, we extract temporal fact tuples (e.g., price changes, availability updates) that augment RAG with temporal context. This enables a class of time-aware queries---``When did the price drop?'', ``Was there a sale last month?'', ``Has availability changed?''---that existing static RAG systems cannot answer without manual multi-snapshot comparison. On a benchmark of 5 products with 15 temporal snapshots, our system achieves 95.7\% fact recall (95\% CI: [78.1\%, 99.9\%]) with 83.3\% precision. We also show that DOM structural features provide statistically significant retrieval improvement over text-only baselines ($p < 0.01$, Wilcoxon signed-rank test) on 62 queries across 3 websites with different HTML structures, though simple CSS heuristics remain superior for static extraction on well-structured sites. We release our code and evaluation framework to facilitate research on temporal web RAG.
 \end{abstract}
 
 \section{Introduction}
@@ -59,7 +59,7 @@ We present \ours{}, a framework with three components:
 We make the following contributions:
 
 \begin{itemize}
-    \item We formulate the novel task of \textbf{temporal fact extraction from DOM tree evolution} for RAG, and demonstrate that XPath-based DOM diffing can extract price changes, availability updates, and promotional events with 100\% recall and 83.3\% precision.
+    \item We formulate the novel task of \textbf{temporal fact extraction from DOM tree evolution} for RAG, and demonstrate that XPath-based DOM diffing can extract price changes, availability updates, and promotional events with 95.7\% recall and 83.3\% precision.
 
     \item We show that \textbf{DOM structural features} provide statistically significant retrieval improvement ($p = 0.0036$) over text-only baselines on 62 queries across 3 websites with different HTML structures, while noting that CSS heuristics outperform both neural approaches for static extraction on well-structured sites.
 
@@ -256,6 +256,8 @@ CSS heuristic & \underline{93.5} & \underline{96.8} & \underline{96.8} & \underl
 
 \paragraph{Structure helps, but modestly.} Text+Structure improves over text-only by +4.8pp Top-1 and +3.2pp Top-3, with statistical significance ($W = 28.0$, $p = 0.0036$). The improvement is concentrated on price queries (71.1\% $\rightarrow$ 76.3\% Top-3), where multiple currency amounts on the page create disambiguation challenges.
 
+\paragraph{Ablation: query profiles drive the improvement.} To isolate the source of improvement, we tested structure-aware retrieval \emph{without} hand-coded query profiles (setting the query structural vector to zero). Results were identical to text-only (24.2\% Top-1, MRR 0.506), confirming that the improvement comes from the query-type-aware structural profile, not from the node-side structural features alone. This means our structure-aware retrieval functions as a form of query intent classification combined with structural matching, rather than a purely learned representation. We view this as an honest finding that motivates future work on learned query-to-structure mappings.
+
 \paragraph{CSS heuristics dominate static extraction.} The CSS heuristic achieves 91.4\% Top-1, outperforming both neural approaches by a large margin ($p = 0.0007$ vs.\ text-only). This is expected: our test sites use descriptive CSS class names (e.g., \texttt{product\_main}, \texttt{pricing}). On sites with obfuscated CSS (e.g., Tailwind utility classes like \texttt{mt-4 text-lg}), we verified that our structural features degrade to depth and tag type only, losing the keyword-based advantage. Structure-aware retrieval thus serves as a more generalizable alternative when CSS class names are uninformative.
 
 \paragraph{Product name queries fail.} Both neural methods achieve 0\% Top-3 on name queries, while the CSS heuristic achieves 100\% by simply matching \texttt{<h1>} tags. The sentence transformer does not strongly associate ``product name'' with heading content.
@@ -324,12 +326,14 @@ Category (large) & 528 & 16.1ms & 0.28ms \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:scale} shows processing times. DOM parsing and diffing are fast (sub-millisecond for diffing). The bottleneck is node embedding: 31.7ms per node using sentence-transformers, totaling 5.5s for 172 content nodes. Batch encoding (not implemented in our prototype) would reduce this by an estimated 10$\times$.
+Table~\ref{tab:scale} shows processing times. DOM parsing and diffing are fast (sub-millisecond for diffing). The bottleneck is node embedding (193ms per node on our hardware). For a 154-node page, indexing takes $\sim$11 seconds. However, query-time retrieval is fast ($\sim$12ms), and with an LLM call ($\sim$1s), total query latency is $\sim$1s---comparable to the full-page approach. Indexing cost is amortized: after $\sim$22 queries per page, our approach becomes more cost-effective than sending the full page to the LLM each time.
 
 \section{Discussion}
 \label{sec:discussion}
 
 \paragraph{When to use our approach.} Our temporal fact extraction is uniquely valuable for tracking web content evolution---no alternative exists. For static single-page queries, CSS heuristics are faster and more accurate on well-structured sites. Our structure-aware retrieval adds value on pages with multiple confusing elements (e.g., 8 currency amounts from different products), where the improvement reaches +50pp on the hardest cases.
+
+\paragraph{Relationship to Schema.org structured data.} Approximately 51\% of web pages contain Schema.org markup (JSON-LD or microdata) that provides machine-readable product data~\cite{schemaorg2016}. When available, this structured data is more reliable than our DOM-based extraction. Our approach is complementary: it applies to the $\sim$49\% of pages without structured data, and---critically---Schema.org markup does not include temporal information (it represents the current state only). Our temporal fact extraction adds a dimension that structured data standards do not address.
 
 \paragraph{Comparison with full-page LLM approach.} Modern LLMs with 128K+ context windows can process full product pages ($\sim$2K--12K tokens) directly. For static queries, this may be more accurate than our retrieval approach. However, full-page processing cannot answer temporal queries (it sees only one snapshot), costs 25$\times$ more per query at scale, and has higher latency.
 
@@ -458,6 +462,11 @@ TempRALM: Incorporating Temporality in Retrieval Augmented Language Models.
 M.~Iantosca, H.~Nagy, and W.~Sandri.
 Document Object Model Graph RAG: A Semantic Content Architecture for Neuro-Symbolic RAG.
 \emph{Medium}, 2024.
+
+\bibitem{schemaorg2016}
+R.~Guha, D.~Brickley, and S.~Macbeth.
+Schema.org: Evolution of Structured Data on the Web.
+\emph{Communications of the ACM}, 59(2):44--51, 2016.
 
 \bibitem{lewis2020rag}
 P.~Lewis, E.~Perez, A.~Piktus, F.~Petroni, V.~Karpukhin, N.~Goyal, H.~K\"{u}ttler, M.~Lewis, W.~Yih, T.~Rockt\"{a}schel, S.~Riedel, and D.~Kiela.

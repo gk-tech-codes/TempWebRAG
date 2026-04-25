@@ -94,7 +94,7 @@ def css_heuristic_rank(kg, content_nodes, query, expected):
 
 def run_evaluation():
     print("=" * 70)
-    print("COMPREHENSIVE EVALUATION — 37 Queries, 3 Templates, 3 Methods")
+    print("COMPREHENSIVE EVALUATION — 64 Queries, 3 Templates, 3 Methods")
     print("=" * 70)
 
     test_set = get_test_set()
