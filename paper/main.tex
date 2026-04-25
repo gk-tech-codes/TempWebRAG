@@ -100,11 +100,11 @@ HtmlRAG~\cite{htmlrag2025} demonstrated that preserving HTML format in RAG outpe
 
 \subsection{DOM Representation Learning}
 
-MarkupLM~\cite{markuplm2022} jointly pre-trains text and markup language using XPath embeddings. DOM-LM~\cite{domlm2022} learns generalizable HTML representations with tree position awareness. Pinterest's cross-domain web IE system~\cite{pinterest2025} combines structural, visual, and text modalities per DOM node for extraction. Our structural features are simpler (hand-crafted, not learned) but serve a different purpose: augmenting RAG retrieval rather than classification.
+MarkupLM~\cite{markuplm2022} jointly pre-trains text and markup language using XPath embeddings. DOM-LM~\cite{domlm2022} learns generalizable HTML representations with tree position awareness. The Klarna Product Page Dataset~\cite{klarna2024} benchmarked GNNs on DOM trees. Pinterest.s cross-domain web IE system~\cite{pinterest2025} combines structural, visual, and text modalities per DOM node for extraction. Our structural features are simpler (hand-crafted, not learned) but serve a different purpose: augmenting RAG retrieval rather than classification.
 
 \subsection{Web Information Extraction}
 
-AXE~\cite{axe2025} achieves 88.1\% F1 on the SWDE dataset by pruning DOM trees for a small LLM. SCRIBES~\cite{scribes2025} uses reinforcement learning to generate reusable extraction scripts. These systems extract structured fields from single snapshots. Our contribution is orthogonal: we track how extracted values \emph{change over time}.
+AXE~\cite{axe2025} achieves 88.1\% F1 on the SWDE dataset by pruning DOM trees for a small LLM. SCRIBES~\cite{scribes2025} uses reinforcement learning to generate reusable extraction scripts. Prune4Web~\cite{prune4web2025} generates Python programs for DOM element filtering. These systems extract structured fields from single snapshots. Our contribution is orthogonal: we track how extracted values \emph{change over time}.
 
 \subsection{Temporal Knowledge and RAG}
 
@@ -293,7 +293,7 @@ Category (large) & 528 & 16.1ms & 0.28ms \\
 \end{tabular}
 \end{table}
 
-DOM parsing and diffing are fast (sub-millisecond for diffing). The bottleneck is node embedding: 31.7ms per node using sentence-transformers, totaling 5.5s for 172 content nodes. Batch encoding (not implemented in our prototype) would reduce this by an estimated 10$\times$.
+Table~\ref{tab:scale} shows processing times. DOM parsing and diffing are fast (sub-millisecond for diffing). The bottleneck is node embedding: 31.7ms per node using sentence-transformers, totaling 5.5s for 172 content nodes. Batch encoding (not implemented in our prototype) would reduce this by an estimated 10$\times$.
 
 \section{Discussion}
 \label{sec:discussion}
