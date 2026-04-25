@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
 from webtkgrag.dom_parser import DOMKnowledgeGraph
 from webtkgrag.embedding import (
-    encode_text_real, encode_node_trimodal, encode_node_textonly,
+    encode_text_real, encode_node_structured, encode_node_textonly,
     cosine_sim,
 )
 
@@ -127,7 +127,7 @@ def run_cross_site_validation():
 
     methods = {
         "text-only": encode_node_textonly,
-        "text+structure": encode_node_trimodal,
+        "text+structure": encode_node_structured,
     }
 
     # Accumulate results per method

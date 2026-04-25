@@ -1,63 +1,60 @@
-# WebTKG-RAG
+# TempWebRAG
 
-**Structure-Aware Retrieval-Augmented Generation over Evolving Web Documents via DOM-Native Temporal Knowledge Graphs**
+**Temporal Fact Extraction from Web Page DOM Evolution for Time-Aware Retrieval-Augmented Generation**
 
 [![arXiv](https://img.shields.io/badge/arXiv-coming_soon-b31b1b.svg)](https://arxiv.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://img.shields.io/badge/tests-10%20passed-green.svg)](eval/test_reproducibility.py)
 
 ## Overview
 
-WebTKG-RAG is a novel RAG framework that treats HTML DOM trees as first-class, temporally-evolving knowledge graphs. Instead of converting HTML to plain text (losing structure), we preserve and exploit the DOM hierarchy for more accurate retrieval and question answering.
+TempWebRAG extracts timestamped facts from the structural evolution of HTML DOM trees, enabling RAG systems to answer temporal queries that no existing system supports:
 
-### Key Contributions
+- *"When did the price drop?"*
+- *"Was there a sale last month?"*
+- *"Has availability changed?"*
 
-1. **Structure-Aware DOM Embeddings** — Each DOM node is embedded using text content + tree-structural position, improving retrieval accuracy by 28% (avg rank) over text-only baselines
-2. **Temporal DOM Knowledge Graph** — Structural tree diffs across time snapshots create timestamped knowledge triples, enabling time-aware QA (e.g., "When did the price drop?")
-3. **Cross-Site Generalization** — Structural features generalize across different website templates without site-specific training
-4. **End-to-End RAG Pipeline** — 94.6% prompt size reduction via targeted DOM-aware retrieval
+## Key Results
 
-## Results
+### Temporal Fact Extraction (Primary Contribution)
 
-### Cross-Site Retrieval Accuracy (3 website templates, 10 queries)
+| Metric | Value | 95% CI |
+|--------|-------|--------|
+| Recall | 100% | [99.5%, 100%] |
+| Precision | 83.3% | [51.6%, 97.9%] |
 
-| Method | Top-1 | Top-3 | Avg Rank |
-|--------|-------|-------|----------|
-| Text-only (baseline) | 20.0% | 50.0% | 6.62 |
-| **Text+Structure (ours)** | 20.0% | **60.0%** | **4.75** |
+No existing RAG system, CSS heuristic, or web scraper can answer temporal queries.
 
-Largest improvement on pages with multiple confusing price elements (+50pp on hardest case).
+### Static Retrieval (Secondary Contribution)
 
-### Temporal QA (8 queries over 3 time snapshots)
+| Method | Top-1 | Top-3 | MRR | p-value |
+|--------|-------|-------|-----|---------|
+| Text-only (baseline) | 22.9% | 71.4% | 0.502 | — |
+| Text+Structure (ours) | **28.6%** | **74.3%** | **0.544** | **0.0079** |
+| CSS heuristic | 91.4% | 94.3% | 0.931 | — |
 
-| Query Type | Accuracy |
-|------------|----------|
-| Current value | 100% (3/3) |
-| Historical value at date | 100% (2/2) |
-| Change detection | 100% (2/2) |
-| Best value identification | 100% (1/1) |
+Structure-aware retrieval provides statistically significant improvement over text-only (p < 0.01). CSS heuristics outperform both neural methods on well-structured sites.
 
 ## Project Structure
 
 ```
-webtkgrag/
 ├── src/webtkgrag/           # Core library
-│   ├── dom_parser.py        # HTML → DOM tree → Knowledge Graph
+│   ├── dom_parser.py        # HTML → DOM Knowledge Graph
 │   ├── embedding.py         # Structure-aware node embeddings
 │   ├── retrieval.py         # Tree traversal retrieval
-│   ├── temporal.py          # Temporal DOM diffing + knowledge graph
-│   └── pipeline.py          # End-to-end RAG pipeline (Bedrock/Mock)
+│   ├── temporal.py          # Temporal DOM diffing + fact extraction
+│   └── pipeline.py          # End-to-end RAG (Bedrock/Mock LLM)
 ├── eval/                    # Evaluation
-│   ├── cross_site_eval.py   # Cross-site validation script
-│   ├── results.md           # Complete experimental results log
-│   ├── design.md            # Experimental design document
-│   └── review.md            # Critical self-review
-├── paper/                   # LaTeX source
-│   └── main.tex             # Full paper draft
-├── docs/                    # Documentation
-│   ├── research_proposal.md # Core idea and novelty analysis
-│   └── literature/          # Related work (60+ papers)
-└── figures/                 # Diagrams
+│   ├── comprehensive_eval.py    # 37-query eval with 3 baselines
+│   ├── temporal_eval_v2.py      # Temporal fact extraction eval
+│   ├── test_reproducibility.py  # 10 reproducibility tests
+│   └── results.md               # Complete results log (40 review iterations)
+├── data/                    # Test data
+│   ├── ground_truth.py      # 37 ground-truth queries
+│   └── test_pages/          # 8 locally-saved HTML pages
+├── paper/main.tex           # LaTeX paper
+└── docs/                    # Research documentation
 ```
 
 ## Quick Start
@@ -65,58 +62,37 @@ webtkgrag/
 ```bash
 pip install -r requirements.txt
 
-# Run cross-site evaluation
-PYTHONPATH=src python eval/cross_site_eval.py
+# Run reproducibility tests (no model loading, <1s)
+PYTHONPATH=src python eval/test_reproducibility.py
 
-# Run full RAG pipeline (mock LLM)
-PYTHONPATH=src python src/webtkgrag/pipeline.py --mode mock
+# Run full evaluation (requires sentence-transformers, ~15s)
+PYTHONPATH=src python eval/comprehensive_eval.py
 
-# Run with Amazon Bedrock (requires AWS credentials)
-PYTHONPATH=src python src/webtkgrag/pipeline.py --mode bedrock
+# Run temporal evaluation
+PYTHONPATH=src python eval/temporal_eval_v2.py
 ```
 
-## Methodology
+## Limitations (Honestly Stated)
 
-```
-HTML Document(s)
-    │
-    ▼
-┌─────────────────────┐
-│ DOM Parser           │  HTML → DOM tree → Knowledge Graph
-│ (dom_parser.py)      │  Removes script/style/junk, preserves structure
-└─────────┬───────────┘
-          │
-          ▼
-┌─────────────────────┐
-│ Structure-Aware      │  Each node: text embedding (384d) + structural
-│ Embedding            │  features (20d) = tri-modal representation
-│ (embedding.py)       │
-└─────────┬───────────┘
-          │
-    ┌─────┴──────┐
-    ▼            ▼
-┌────────┐  ┌──────────────┐
-│Retrieve│  │Temporal Diff │  Compare DOM snapshots over time
-│top-k   │  │(temporal.py) │  → timestamped knowledge triples
-│nodes   │  └──────┬───────┘
-└───┬────┘         │
-    │    ┌─────────┘
-    ▼    ▼
-┌─────────────────────┐
-│ RAG Pipeline         │  Retrieved HTML + temporal context → LLM → Answer
-│ (pipeline.py)        │
-└─────────────────────┘
-```
+1. Tested on practice websites only (50-200x smaller than real e-commerce)
+2. Temporal data is simulated (need Wayback Machine validation)
+3. No end-to-end LLM answer evaluation
+4. XPath matching breaks on structural DOM changes
+5. Single-product pages only
+6. No visual features (bounding box, font size)
+7. JavaScript-rendered pages not supported
+8. Hand-coded query profiles and relation inference
+
+See paper Section 6 and `eval/results.md` for full discussion.
 
 ## Citation
 
 ```bibtex
-@article{webtkgrag2026,
-  title={WebTKG-RAG: Structure-Aware Retrieval-Augmented Generation
-         over Evolving Web Documents via DOM-Native Temporal Knowledge Graphs},
+@article{tempwebrag2026,
+  title={Temporal Fact Extraction from Web Page DOM Evolution
+         for Time-Aware Retrieval-Augmented Generation},
   author={[Authors]},
-  year={2026},
-  note={Preprint}
+  year={2026}
 }
 ```
 

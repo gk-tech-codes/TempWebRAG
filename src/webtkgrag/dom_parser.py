@@ -1,5 +1,5 @@
 """
-Phase 1: HTML → DOM Tree → Knowledge Graph
+DOM Parser: HTML → DOM Tree → Knowledge Graph
 
 This is the foundation of WebTKG-RAG.
 We parse HTML into a DOM tree, then represent it as a knowledge graph
@@ -14,7 +14,6 @@ Key concepts:
 from bs4 import BeautifulSoup, NavigableString, Tag
 from dataclasses import dataclass, field
 from typing import Optional
-import json
 
 
 @dataclass
@@ -29,7 +28,7 @@ class DOMNode:
     parent_id: Optional[int]
     children_ids: list = field(default_factory=list)
     attributes: dict = field(default_factory=dict)
-    # Visual properties (populated in Phase 2)
+    # Visual properties (optional, requires headless browser)
     bbox: Optional[tuple] = None  # (x, y, w, h)
     font_size: Optional[float] = None
     color: Optional[str] = None
@@ -367,7 +366,7 @@ def run_validation():
     for n in content_nodes:
         print(f"   [{n.node_id}] <{n.tag}> depth={n.depth}: \"{n.text[:60]}\"")
 
-    print(f"\n✅ Phase 1 PASSED: DOM parsed into {stats['total_nodes']} nodes, "
+    print(f"\n✅ DOM parser validated: parsed into {stats['total_nodes']} nodes, "
           f"{len(dollar_nodes)} dollar amounts identified with distinct structural paths.")
 
 

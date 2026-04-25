@@ -1,5 +1,5 @@
 """
-Phase 4: Temporal DOM Diffing → Evolving Knowledge Graph
+Temporal DOM Diffing and Fact Extraction
 
 This is our MOST UNIQUE contribution. No existing paper combines
 DOM tree differencing with temporal knowledge graphs for RAG.
@@ -17,7 +17,6 @@ practical for HTML where node identity is defined by position.
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from webtkgrag.dom_parser import DOMKnowledgeGraph, DOMNode
 
 

@@ -1,5 +1,5 @@
 """
-Phase 2 — RIGOROUS VERSION
+Structure-Aware Node Embedding
 
 Tri-Modal Embedding with real sentence-transformers, honest evaluation,
 and baseline comparison.
@@ -13,12 +13,11 @@ Design decisions (documented for paper):
 Baselines:
 - TEXT-ONLY: Just sentence-transformer on node text (no structure, no visual)
 - STRUCTURE-ONLY: Just structural features
-- TRI-MODAL: Text + Structure + Visual (our approach)
+- TEXT+STRUCTURE: Text + DOM structural features (our approach)
 """
 
 import numpy as np
 import requests
-import time
 from dataclasses import dataclass
 from webtkgrag.dom_parser import DOMKnowledgeGraph, DOMNode
 
@@ -137,7 +136,7 @@ def encode_node_textonly(node: DOMNode) -> np.ndarray:
     return encode_text_real(node.text)
 
 
-def encode_node_trimodal(node: DOMNode, kg: DOMKnowledgeGraph) -> np.ndarray:
+def encode_node_structured(node: DOMNode, kg: DOMKnowledgeGraph) -> np.ndarray:
     """Our approach: text + structure (visual omitted — noted as limitation)."""
     e_text = encode_text_real(node.text)
     e_struct = encode_structure(node, kg)
@@ -179,8 +178,8 @@ def evaluate_method(method_name, encode_fn, kg, content_nodes, query, correct_an
     if method_name == "text-only":
         q_emb = encode_text_real(query)
     else:
-        # For tri-modal, we encode the query as text but match against tri-modal node embeddings
-        # This is asymmetric matching — query is text, nodes are tri-modal
+        # For structure-aware, we encode the query as text but match against structure-aware node embeddings
+        # This is asymmetric matching — query is text, nodes are structure-aware
         q_text = encode_text_real(query)
         # Create a "query structure profile" — we want product-area, leaf nodes
         q_struct = np.zeros(20, dtype=np.float32)
@@ -261,7 +260,7 @@ def run_rigorous_evaluation():
     # Methods to compare
     methods = {
         "text-only": encode_node_textonly,
-        "text+structure (ours)": encode_node_trimodal,
+        "text+structure (ours)": encode_node_structured,
     }
 
     # Results accumulator
@@ -347,7 +346,7 @@ def run_rigorous_evaluation():
     print(f"   5. Need comparison with HtmlRAG baseline (their code is open source)")
 
     print(f"\n{'='*70}")
-    print(f"Phase 2 Rigorous Evaluation Complete")
+    print(f"Embedding Evaluation Complete")
     print(f"{'='*70}")
 
 

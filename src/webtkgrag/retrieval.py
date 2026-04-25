@@ -1,5 +1,5 @@
 """
-Phase 3: Confidence-Guided Tree Traversal
+DOM Tree Traversal Retrieval
 
 Instead of comparing the query against ALL nodes (O(n)),
 we walk the DOM tree top-down, pruning irrelevant subtrees early.
@@ -20,7 +20,7 @@ import requests
 import time
 from webtkgrag.dom_parser import DOMKnowledgeGraph, DOMNode
 from webtkgrag.embedding import (
-    encode_text_real, encode_structure, encode_node_trimodal,
+    encode_text_real, encode_structure, encode_node_structured,
     cosine_sim,
 )
 
@@ -167,7 +167,7 @@ def count_subtree_nodes(kg: DOMKnowledgeGraph, node_id: int) -> int:
 # Evaluation
 # ============================================================
 
-def run_phase3():
+def run_retrieval_eval():
     print("=" * 70)
     print("PHASE 3: Confidence-Guided Tree Traversal")
     print("Comparing BRUTE FORCE vs TREE TRAVERSAL retrieval")
@@ -202,7 +202,7 @@ def run_phase3():
         # Pre-compute embeddings for all content nodes
         embeddings = {}
         for node in content_nodes:
-            embeddings[node.node_id] = encode_node_trimodal(node, kg)
+            embeddings[node.node_id] = encode_node_structured(node, kg)
 
         for query, expected in queries:
             print(f"\n   ❓ Query: \"{query}\" (expect: \"{expected}\")")
@@ -264,4 +264,4 @@ Limitations:
 
 
 if __name__ == "__main__":
-    run_phase3()
+    run_retrieval_eval()

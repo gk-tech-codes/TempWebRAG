@@ -1,5 +1,5 @@
 """
-Phase 5: Full RAG Pipeline — Query → Retrieve → LLM → Answer
+Full RAG Pipeline — Query → Retrieve → LLM → Answer
 
 Connects all previous phases into an end-to-end system:
   Phase 1: HTML → DOM Knowledge Graph
@@ -10,10 +10,10 @@ Connects all previous phases into an end-to-end system:
 
 Usage:
   # With Bedrock (requires valid AWS credentials):
-  python phase5_rag_pipeline.py --mode bedrock
+  python pipeline.py --mode bedrock
 
   # Mock mode (no credentials needed, simulates LLM):
-  python phase5_rag_pipeline.py --mode mock
+  python pipeline.py --mode mock
 """
 
 import json
@@ -23,7 +23,7 @@ import numpy as np
 from dataclasses import dataclass
 from webtkgrag.dom_parser import DOMKnowledgeGraph
 from webtkgrag.embedding import (
-    encode_text_real, encode_node_trimodal, cosine_sim,
+    encode_text_real, encode_node_structured, cosine_sim,
 )
 from webtkgrag.temporal import (
     TemporalKnowledgeGraph, compute_dom_diff, get_ancestor_classes,
@@ -98,7 +98,7 @@ class WebTKGRAG:
         content_nodes = kg.get_content_nodes()
         embeddings = {}
         for node in content_nodes:
-            embeddings[node.node_id] = encode_node_trimodal(node, kg)
+            embeddings[node.node_id] = encode_node_structured(node, kg)
 
         self.pages[url] = (kg, embeddings, content_nodes)
 
@@ -156,7 +156,18 @@ class WebTKGRAG:
         kg, embeddings, content_nodes = self.pages[url]
 
         q_emb = encode_text_real(query)
-        q_full = np.concatenate([q_emb, np.zeros(20, dtype=np.float32)])
+        # Add query-type-aware structural profile
+        q_struct = np.zeros(20, dtype=np.float32)
+        q_lower = query.lower()
+        if any(w in q_lower for w in ("price", "cost", "much", "cheap")):
+            q_struct[5] = 1.0   # price ancestor
+            q_struct[11] = 1.0  # price class
+        elif any(w in q_lower for w in ("stock", "available", "buy", "availability")):
+            q_struct[0] = 0.5
+        elif any(w in q_lower for w in ("name", "title", "called", "product")):
+            q_struct[2] = 1.0   # heading
+        q_struct_norm = q_struct / (np.linalg.norm(q_struct) + 1e-8)
+        q_full = np.concatenate([q_emb, q_struct_norm * 0.3])
         q_full = q_full / (np.linalg.norm(q_full) + 1e-8)
 
         scores = []
@@ -246,7 +257,7 @@ Answer concisely based only on the provided context. If temporal data is availab
 # Test Scenarios
 # ============================================================
 
-# Temporal snapshots (from Phase 4)
+# Temporal test snapshots
 SNAPSHOT_T1 = """
 <html><body>
   <nav><a href="/">Home</a><span class="cart">$0.00</span></nav>
@@ -369,7 +380,7 @@ def run_pipeline(mode="mock"):
   Static RAG: Tested on real external page (books.toscrape.com)
   Temporal RAG: Tested with 3 snapshots, price/availability history in prompt
 
-  To switch to Bedrock: python phase5_rag_pipeline.py --mode bedrock
+  To switch to Bedrock: python pipeline.py --mode bedrock
   (requires valid AWS credentials via ada)
 """)
 

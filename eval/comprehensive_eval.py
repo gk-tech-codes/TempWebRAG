@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from webtkgrag.dom_parser import DOMKnowledgeGraph
-from webtkgrag.embedding import encode_text_real, encode_node_trimodal, encode_node_textonly, cosine_sim
+from webtkgrag.embedding import encode_text_real, encode_node_structured, encode_node_textonly, cosine_sim
 from data.ground_truth import get_test_set
 
 import re
@@ -115,7 +115,7 @@ def run_evaluation():
             kg = DOMKnowledgeGraph().parse(html)
             content_nodes = kg.get_content_nodes()
             embeddings_text = {n.node_id: encode_node_textonly(n) for n in content_nodes}
-            embeddings_struct = {n.node_id: encode_node_trimodal(n, kg) for n in content_nodes}
+            embeddings_struct = {n.node_id: encode_node_structured(n, kg) for n in content_nodes}
             page_cache[fname] = (kg, content_nodes, embeddings_text, embeddings_struct)
 
         kg, content_nodes, emb_text, emb_struct = page_cache[fname]
