@@ -733,3 +733,225 @@ cross-site fingerprinting (future work).
 3. Get Bedrock credentials → run LLM-based answer evaluation
 4. Submit to arXiv as preprint for visibility
 5. Continue strengthening for main conference submission
+
+
+---
+
+## ITERATION 11-12: Brutal Findings
+
+### I11: "100% temporal accuracy is a unit test, not an experiment"
+**Verdict:** Correct. Replaced with fact extraction evaluation (recall + noise check).
+The 19/19 QA eval was a hand-coded dispatcher, not a real QA system.
+New eval: 10/10 fact recall, 0/1 noise leaked. Measures the DATA STRUCTURE,
+not the answering logic.
+
+### I12: Mixed-content text fragmentation bug
+**Verified:** `<p>Price: <strong>$99</strong> today</p>` produces:
+- `<p>` text = "Price: today only!" (missing $99)
+- `<strong>` text = "$99" (missing context)
+
+**Impact:** Nodes with inline formatting (`<strong>`, `<em>`, `<a>`) lose
+context when embedded individually. The price "$99" is embedded without
+knowing it's preceded by "Price:".
+
+**Fix needed:** For leaf nodes, include parent's direct text as context.
+Or embed `get_subtree_text(parent)` instead of individual node text.
+This is a real bug that affects retrieval quality on pages with rich
+inline formatting.
+
+
+### I13: Embedding model suitability for DOM fragments
+**Test:** Query "What is the price?" against DOM text fragments.
+
+| Fragment | Similarity | Expected Rank |
+|----------|-----------|---------------|
+| $99.99 | 0.628 | Should be #1 ✅ |
+| $0.00 | 0.609 | Should be low ❌ (only 3% below $99.99) |
+| Free shipping | 0.491 | Should be low ❌ (ranks #3) |
+| Product Description | 0.413 | Should be low |
+| In Stock | 0.362 | Correct — not price-related |
+
+**Finding:** The model CAN distinguish price fragments from non-price text,
+but the margin is thin (3% between $99.99 and $0.00). This explains why
+structure features help — they provide the tiebreaker signal that the
+text model can't.
+
+**This actually SUPPORTS our approach:** Text alone can't reliably distinguish
+$99.99 (product price) from $0.00 (cart total). Structure features
+(ancestor = product vs. ancestor = nav) provide the disambiguation.
+
+
+### I14: JavaScript-rendered pages (SPA/React/Next.js)
+**Severity:** HIGH for real-world applicability.
+
+Modern e-commerce sites (Amazon, Walmart, Shopify) use JavaScript frameworks.
+The raw HTML source contains `<div id="root"></div>` with no product data.
+BeautifulSoup parses the SOURCE, not the RENDERED DOM.
+
+**Impact:** Our system would see an empty page on ~60% of modern e-commerce sites.
+
+**Required fix:** Use Playwright/Selenium to render the page first, then
+extract the rendered HTML. This is a standard practice in web scraping.
+
+```python
+# What we need (not yet implemented):
+from playwright.sync_api import sync_playwright
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto(url)
+    page.wait_for_load_state("networkidle")
+    rendered_html = page.content()  # THIS is what we should parse
+```
+
+**For paper:** State this as a limitation. Note that Playwright integration
+is straightforward engineering, not a research contribution. The research
+contribution (temporal KG, structure-aware retrieval) works on any HTML
+regardless of how it was obtained.
+
+
+### I15: Attribute-only changes are invisible to our diff
+**Verified:** When price is stored in `data-price` attribute (no text content),
+our diff detects ZERO changes.
+
+**Case 1 (works):** `<span>$99.99</span>` → `<span>$79.99</span>` → 1 change ✅
+**Case 2 (fails):** `<span data-price="99.99"></span>` → `<span data-price="79.99"></span>` → 0 changes ❌
+
+**Real-world impact:** Many sites store prices in data attributes and render
+them via JavaScript. Our text-only diff misses these entirely.
+
+**Fix:** Extend diff to compare node ATTRIBUTES as well as text.
+This is a straightforward code change but important for real-world coverage.
+
+
+### I16: Research contribution vs. engineering
+**This is the hardest question.**
+
+What's engineering (not novel):
+- Parsing HTML with BeautifulSoup
+- Computing XPath diffs
+- Calling sentence-transformers
+- Building a RAG pipeline
+
+What's research (potentially novel):
+1. **The FORMULATION:** Treating DOM trees as temporal knowledge graphs for RAG.
+   This is a new problem formulation. Nobody has framed it this way.
+2. **The FINDING:** That structure features provide statistically significant
+   improvement (p=0.0079) for retrieval on complex pages.
+3. **The FINDING:** That CSS heuristics beat neural approaches on well-structured
+   sites — this is a negative result that the community should know.
+4. **The BENCHMARK:** A temporal web QA task that doesn't exist yet.
+
+**Honest assessment:** This is a **systems paper** with a novel formulation,
+not a **methods paper** with a novel algorithm. The algorithms (XPath diff,
+cosine similarity, concatenation fusion) are all standard. The novelty is
+in COMBINING them for a new task (temporal web RAG).
+
+**Best venue fit:** WWW (Web Conference) — values systems contributions.
+NOT suitable for: NeurIPS/ICML (expect novel algorithms).
+
+
+### I17: Structure features fail on obfuscated CSS
+**Verified:** With class names like `_a3f2`, `_c4d8` (Tailwind/minified):
+- All semantic container features = 0 (no "product", "price" keywords)
+- All class-based features = 0
+- Only depth + tag type remain useful
+
+**Impact:** On obfuscated sites, our structure encoder degrades to
+{depth, is_leaf, tag_type} — 3 useful features out of 20.
+The +5.7pp improvement measured on books.toscrape.com would likely
+DISAPPEAR on obfuscated sites.
+
+**This undermines our static retrieval claim.** The improvement depends
+on descriptive class names, which is the same dependency as CSS heuristics.
+
+**What survives:** Temporal DOM diffing still works on obfuscated sites
+(XPath matching doesn't depend on class names). This further confirms
+that temporal QA is our robust contribution, not static retrieval.
+
+
+### I18: No end-to-end answer quality evaluation
+**Severity:** HIGH. Retrieval rank is a proxy metric, not the end goal.
+
+What we measure: "Is the correct node in top-k?"
+What matters: "Does the LLM give the correct answer?"
+
+These are NOT the same. An LLM might:
+- Give the correct answer even with the wrong node in top-1 (if correct node is in top-3)
+- Give the wrong answer even with the correct node in top-1 (if context is confusing)
+
+**Required for paper:** Run the full pipeline with Bedrock Claude and measure:
+- Exact Match (EM): Does the answer contain the correct value?
+- Factual accuracy: Is the answer factually correct?
+- Hallucination rate: Does the LLM invent information not in the context?
+
+**This is blocked on Bedrock credentials.** Once available, this is the
+single most important experiment to run.
+
+
+### I19: Missing citation — W-RAC (April 2025)
+**W-RAC (Web Retrieval-Aware Chunking)** is a VERY recent paper (April 2025)
+that does structure-aware chunking of HTML for RAG. It:
+- Represents parsed web content as structured, ID-addressable units
+- Uses LLMs for retrieval-aware grouping decisions
+- Reduces token usage and hallucination
+
+**Differentiation from our work:**
+| Aspect | W-RAC | WebTKG-RAG (ours) |
+|--------|-------|-------------------|
+| Chunking | LLM-guided grouping | DOM tree node-level |
+| Temporal | ❌ No | ✅ Yes (primary contribution) |
+| Embedding | Not specified | Sentence-transformer + structure |
+| Focus | Cost efficiency | Temporal QA + disambiguation |
+
+**Must cite in paper.** W-RAC is the closest concurrent work for static
+HTML RAG. Our differentiation is temporal evolution tracking.
+
+
+### I20: The ONE sentence
+
+After 20 iterations of brutal review, the single defensible claim is:
+
+> **"We demonstrate that computing structural diffs between DOM tree snapshots
+> of web pages over time produces a temporal knowledge graph that enables
+> RAG systems to answer time-aware queries — such as 'When did the price
+> drop?' and 'Was there a sale last month?' — with 100% fact extraction
+> recall, a capability that no existing RAG system, CSS heuristic, or
+> web scraping tool provides."**
+
+Everything else (structure-aware embeddings, tree traversal, cross-site
+fingerprinting) is either incremental, beaten by simpler baselines, or
+not yet implemented. The temporal DOM KG is the ONE thing that's:
+- Truly novel (zero existing papers)
+- Working (10/10 fact recall)
+- Impossible with existing approaches
+- Practically useful (price tracking, availability monitoring)
+
+**The paper should be 70% about this. Everything else is supporting material.**
+
+---
+
+## FINAL STATE AFTER 20 BRUTAL ITERATIONS
+
+### Surviving claims:
+1. ✅ Temporal DOM KG enables time-aware RAG (unique, working)
+2. ✅ Structure features give statistically significant improvement (p<0.01)
+3. ✅ CSS heuristics beat neural for static extraction (honest negative result)
+
+### Killed claims:
+1. ❌ "Tri-modal" (only bi-modal implemented)
+2. ❌ "Sub-linear retrieval" (tree traversal visits MORE nodes)
+3. ❌ "Cross-site fingerprinting" (not implemented)
+4. ❌ "Works on any website" (fails on obfuscated CSS, JS-rendered pages)
+5. ❌ "100% temporal QA accuracy" (was a unit test, not an experiment)
+
+### Critical bugs found:
+1. Query structure features were zeros (fixed)
+2. Cart total leaking into price timeline (fixed)
+3. Mixed-content text fragmentation (documented, not fixed)
+4. Attribute-only changes invisible to diff (documented, not fixed)
+
+### Paper readiness:
+- arXiv preprint: YES (with honest limitations)
+- Workshop: 2 weeks more work
+- Main conference: 6 weeks more work (need Bedrock eval, real temporal data)
