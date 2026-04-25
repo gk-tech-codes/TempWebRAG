@@ -21,8 +21,8 @@ TempWebRAG extracts timestamped facts from the structural evolution of HTML DOM 
 
 | Metric | Value | 95% CI |
 |--------|-------|--------|
-| Recall | 100% | [99.5%, 100%] |
-| Precision | 83.3% | [51.6%, 97.9%] |
+| Recall | 100% | [85.2%, 100%] |
+| Precision | 70.0% | [55.4%, 82.1%] |
 
 No existing RAG system, CSS heuristic, or web scraper can answer temporal queries.
 
@@ -30,9 +30,9 @@ No existing RAG system, CSS heuristic, or web scraper can answer temporal querie
 
 | Method | Top-1 | Top-3 | MRR | p-value |
 |--------|-------|-------|-----|---------|
-| Text-only (baseline) | 22.9% | 71.4% | 0.502 | — |
-| Text+Structure (ours) | **28.6%** | **74.3%** | **0.544** | **0.0079** |
-| CSS heuristic | 91.4% | 94.3% | 0.931 | — |
+| Text-only (baseline) | 24.2% | 71.0% | 0.506 | — |
+| Text+Structure (ours) | **29.0%** | **74.2%** | **0.542** | **0.0036** |
+| CSS heuristic | 93.5% | 96.8% | 0.929 | — |
 
 Structure-aware retrieval provides statistically significant improvement over text-only (p < 0.01). CSS heuristics outperform both neural methods on well-structured sites.
 
