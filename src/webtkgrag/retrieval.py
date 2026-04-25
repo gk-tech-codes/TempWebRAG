@@ -18,7 +18,6 @@ but tree traversal should visit far fewer nodes.
 import numpy as np
 import requests
 import time
-from sentence_transformers import SentenceTransformer
 from webtkgrag.dom_parser import DOMKnowledgeGraph, DOMNode
 from webtkgrag.embedding import (
     encode_text_real, encode_structure, encode_node_trimodal,

@@ -20,15 +20,15 @@ import numpy as np
 import requests
 import time
 from dataclasses import dataclass
-from sentence_transformers import SentenceTransformer
 from webtkgrag.dom_parser import DOMKnowledgeGraph, DOMNode
 
-# Lazy model loading — avoids 2-3s delay on every import
+# Lazy model loading — defers both library import and model instantiation
 _TEXT_MODEL = None
 
 def _get_model():
     global _TEXT_MODEL
     if _TEXT_MODEL is None:
+        from sentence_transformers import SentenceTransformer
         print("Loading sentence-transformer model...")
         _TEXT_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
         print(f"  Model loaded. Embedding dim: {_TEXT_MODEL.get_sentence_embedding_dimension()}")

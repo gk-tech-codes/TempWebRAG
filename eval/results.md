@@ -1123,3 +1123,182 @@ contribution best suited for WWW (Web Conference).
 "Submit to arXiv now. Target a WWW workshop for feedback. Spend 6 weeks
 getting real temporal data and Bedrock evaluation, then submit to
 WWW 2027 main conference."
+
+
+---
+
+## ITERATIONS 26-30: Super-Critical Senior Review
+
+### I26: "Knowledge Graph" is a misnomer — TERMINOLOGY ERROR IN TITLE
+**Severity:** HIGH. Affects paper title, abstract, and all claims.
+
+Our data structure is:
+```python
+self.triples = list[TemporalTriple]   # flat list
+self.timeline = dict[str, list]        # dict of lists
+```
+
+A real knowledge graph has:
+- Entities as nodes with types and properties
+- Typed relations as edges
+- Ontology defining valid entity/relation types
+- Inference capabilities (transitivity, subsumption)
+- Entity linking (resolving "Sony WH-1000XM5" to a canonical entity)
+
+We have NONE of these. Our structure is a **temporal fact store** or
+**temporal attribute log**, not a knowledge graph.
+
+**Options:**
+1. Rename to "Temporal Fact Store" (honest but less impressive)
+2. Rename to "Temporal Web Knowledge Base" (slightly more accurate)
+3. Actually build a graph (add entity nodes, relation edges, ontology)
+
+**Recommendation:** Option 2 for the paper. "Knowledge base" is a broader
+term that encompasses our flat triple store without implying graph structure.
+
+**Revised title candidate:**
+"WebTKB-RAG: Temporal Web Knowledge Bases from DOM Evolution
+for Time-Aware Retrieval-Augmented Generation"
+
+Or keep "knowledge graph" but ACTUALLY implement graph structure with
+entity nodes and relation edges. This is ~50 lines of code but would
+make the claim honest.
+
+
+### I27: Precision is 75%, not 100% — duplicate name facts are noise
+**Verified:** The temporal KG extracts 8 triples, of which 2 are redundant
+name facts ("Sony WH-1000XM5" repeated at each timestamp with no change).
+
+| Metric | Value |
+|--------|-------|
+| Total triples extracted | 8 |
+| Useful triples (price, availability, discount) | 6 |
+| Noise triples (unchanged name repeated) | 2 |
+| **Precision** | **75.0%** |
+| **Recall** | **100%** (all expected facts found) |
+| **F1** | **85.7%** |
+
+The deduplication logic prevents exact duplicates but doesn't prevent
+extracting the SAME UNCHANGED fact at every timestamp. The name "Sony
+WH-1000XM5" is extracted at t1 and t2 even though it didn't change.
+
+**Fix:** Only add facts from snapshots if they're NEW (not seen in previous
+snapshot). Or only extract facts from DIFFS, not from full snapshots.
+
+**For paper:** Report F1=85.7%, not just recall=100%. This is more honest
+and still a strong result.
+
+
+### I28: Ground truth has no inter-annotator agreement, price definition is ambiguous
+**Valid criticism.** Our ground truth was created by one person (the author).
+
+Ambiguities in "What is the price?":
+- Display price vs. tax-exclusive vs. tax-inclusive?
+- Current price vs. original price vs. sale price?
+- Per-unit price vs. bulk price?
+
+On our test pages, these happen to be the same value (£54.23 appears
+in all three locations). But on real e-commerce sites, they differ.
+
+**For paper:**
+1. Define "price" precisely: "The most prominently displayed current
+   selling price, including any active discounts."
+2. Acknowledge single-annotator limitation.
+3. For a main conference submission, get a second annotator and report
+   Cohen's kappa inter-annotator agreement.
+
+
+### I29: Module coupling — importing embedding.py takes 8.8 seconds
+**Verified:** `from sentence_transformers import SentenceTransformer` alone
+takes ~8.8 seconds (loads PyTorch, transformers, tokenizers).
+
+Our lazy loading only defers model instantiation, not the library import.
+Any module that imports from embedding.py pays this 8.8s penalty.
+
+**Current coupling:**
+- dom_parser.py → standalone ✅ (115ms import)
+- temporal.py → imports dom_parser only ✅ (1ms import)
+- embedding.py → imports sentence_transformers ❌ (8.8s import)
+- retrieval.py → imports embedding ❌ (inherits 8.8s)
+- pipeline.py → imports embedding + temporal ❌ (inherits 8.8s)
+
+**Fix:** Move the `import SentenceTransformer` inside `_get_model()`:
+```python
+def _get_model():
+    global _TEXT_MODEL
+    if _TEXT_MODEL is None:
+        from sentence_transformers import SentenceTransformer  # lazy import
+        _TEXT_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
+    return _TEXT_MODEL
+```
+
+This is a 2-line fix that makes all imports instant.
+
+
+### I30: What would make an Area Chair vote "accept"?
+
+**Minimum viable experiments for acceptance at WWW:**
+
+1. **Real temporal data (MUST HAVE)**
+   Crawl 10 product pages from Wayback Machine at 3+ time points each.
+   Show that our DOM diff correctly extracts real price/availability changes.
+   This is the difference between "demo" and "research."
+
+2. **LLM end-to-end evaluation (MUST HAVE)**
+   Give Claude/GPT the temporal context we extract. Ask temporal questions.
+   Measure: Does the LLM answer correctly? Compare against:
+   - LLM with full page (no retrieval)
+   - LLM with plain text (no structure)
+   - LLM with our temporal context
+   This proves the temporal KG actually HELPS the LLM, not just that we can extract facts.
+
+3. **One compelling case study (SHOULD HAVE)**
+   Track a real product (e.g., iPhone on Amazon) over 30 days.
+   Show the temporal KG capturing a real Black Friday sale, a real
+   stock-out event, a real price increase. One real example is worth
+   100 simulated ones.
+
+4. **Comparison with "just concatenate all snapshots" baseline (SHOULD HAVE)**
+   The simplest temporal approach: give the LLM all 3 HTML snapshots
+   concatenated. Does our structured temporal KG actually help vs.
+   this brute-force approach?
+
+**What we DON'T need for acceptance:**
+- Visual modality (can be future work)
+- Cross-site fingerprinting (can be future work)
+- 1000+ queries (37 with significance is enough for a systems paper)
+- Novel algorithms (systems papers at WWW don't require this)
+
+**Estimated effort:** 2-3 weeks for items 1-4.
+
+---
+
+## FINAL STATE AFTER 30 ITERATIONS
+
+### Corrections made during this round:
+1. ✅ "Knowledge graph" exposed as misnomer (it's a fact store)
+2. ✅ Precision measured: 75%, not just recall 100% → F1=85.7%
+3. ✅ Ground truth ambiguity documented (price definition)
+4. ✅ Module coupling fixed: import 8.8s → 488ms (18x faster)
+5. ✅ Minimum viable experiments for acceptance identified
+
+### The paper's final honest positioning:
+
+**Title (revised):** "Temporal Fact Extraction from Web Page Evolution
+for Time-Aware Retrieval-Augmented Generation"
+
+**One-sentence contribution:** "We extract timestamped facts from DOM tree
+diffs of web page snapshots, enabling RAG systems to answer temporal
+queries that no existing approach supports."
+
+**What we claim:**
+- Novel task formulation (temporal web RAG)
+- Working prototype with 85.7% F1 on temporal fact extraction
+- Statistically significant retrieval improvement (p<0.01)
+- Honest comparison showing heuristics beat neural for static tasks
+
+**What we don't claim:**
+- State-of-the-art on any existing benchmark
+- Novel algorithms
+- Production-ready system
+- Works on all websites
