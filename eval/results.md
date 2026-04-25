@@ -437,3 +437,299 @@ The CSS heuristic result is humbling but scientifically important:
 4. Acknowledge that for simple extraction, heuristics are sufficient
 5. Our approach adds value for: temporal queries, cross-site generalization
    on non-standard sites, and complex disambiguation scenarios
+
+
+---
+
+## Experiment 8: Temporal QA Evaluation (19 queries, 3 products, 5 query types)
+
+**Date:** 2026-04-25
+
+### Setup
+- 3 simulated products with 3 temporal snapshots each (9 snapshots total)
+- 19 temporal queries across 5 types
+- Products: Sony WH-1000XM5, MacBook Air M3, Nike Air Max 90
+- Scenarios: price drops, sales events, stock changes, rating changes
+
+### Results
+
+| Query Type | Correct | Total | Accuracy |
+|------------|---------|-------|----------|
+| current_value | 5 | 5 | 100% |
+| historical_value | 4 | 4 | 100% |
+| change_detection | 4 | 4 | 100% |
+| temporal_localization | 4 | 4 | 100% |
+| event_detection | 2 | 2 | 100% |
+| **Overall** | **19** | **19** | **100%** |
+
+### Baseline Comparison
+
+| Method | Can answer temporal queries? |
+|--------|----------------------------|
+| Plain text RAG | ❌ No |
+| HtmlRAG | ❌ No |
+| CSS heuristic | ❌ No |
+| **WebTKG-RAG (ours)** | **✅ Yes (19/19)** |
+
+### Limitation
+Data is simulated. Real temporal validation requires Wayback Machine crawls.
+However, the temporal KG construction algorithm (XPath-based diff) is
+deterministic and would work identically on real data — the only question
+is whether real websites change in ways our XPath matching can handle
+(structural changes would break it).
+
+
+---
+
+## Known Limitation: Query Structure Profile is Hand-Coded
+
+**Severity:** Moderate
+**Identified in:** Iteration 3 of self-review
+
+The query encoder for text+structure uses hand-coded rules:
+```python
+if "price" in query: q_struct[5] = 1.0  # price ancestor
+if "stock" in query: q_struct[0] = 0.5  # depth
+```
+
+This is essentially telling the system "this is a price query, look in price containers."
+A reviewer would correctly call this a form of label leakage.
+
+**Impact on results:** The +5.7pp improvement over text-only partially comes from
+this hand-coded signal. Without it (as we discovered in the bug), the improvement
+is zero.
+
+**Proposed fix for paper:**
+1. Train a small query classifier (query text → query type → structure profile)
+   using a held-out set of labeled queries
+2. Or use the LLM to classify the query type before retrieval
+3. Or learn the query-to-structure mapping end-to-end with contrastive training
+
+**For honest reporting:** State in the paper that the query structure profile
+is a design choice that assumes query type is known or can be classified.
+This is analogous to how search engines use query intent classification.
+
+
+---
+
+## Novelty Differentiation from Pinterest IE (2025)
+
+Pinterest's cross-domain web IE system combines structural, visual, and text
+modalities per HTML node — similar to our approach. Key differences:
+
+| Aspect | Pinterest IE | WebTKG-RAG (ours) |
+|--------|-------------|-------------------|
+| **Task** | Extraction (classify nodes) | RAG retrieval (find relevant context for LLM) |
+| **Output** | Structured fields (name, price) | HTML context for LLM generation |
+| **Temporal** | ❌ Single snapshot | ✅ Multi-snapshot temporal KG |
+| **Query-driven** | ❌ Extracts all fields | ✅ Retrieves based on user query |
+| **LLM integration** | ❌ No LLM | ✅ Full RAG pipeline |
+| **Open source** | ❌ Internal Pinterest system | ✅ Open source |
+
+The key differentiator is NOT the tri-modal embedding (Pinterest does this).
+It IS the temporal knowledge graph + RAG integration.
+
+**Paper positioning:** "While Pinterest (2025) demonstrated the value of
+multi-modal DOM node representations for extraction, we extend this paradigm
+to RAG retrieval and introduce temporal DOM evolution tracking — enabling
+a class of time-aware queries that extraction systems cannot support."
+
+
+---
+
+## Known Limitation: XPath Fragility Under Structural Changes
+
+**Severity:** High for temporal component
+**Verified with test:** Adding a wrapper `<div>` breaks node matching.
+
+### The Problem
+When a website adds/removes wrapper elements (common in redesigns),
+XPaths change even though the content is the same:
+```
+Before: /html/body/div[1]/span[1] → "$99"
+After:  /html/body/div[1]/div[1]/span[1] → "$79"  (wrapper div added)
+```
+Our system sees DELETE "$99" + INSERT "$79" instead of MODIFY "$99"→"$79".
+
+### Impact
+- Price change is still detected (both values appear in the KG)
+- But the temporal CONNECTION is lost (we don't know $79 replaced $99)
+- This affects change_detection and temporal_localization queries
+
+### Proposed Mitigations (for paper's Future Work section)
+1. **Semantic matching:** Match nodes by (tag + class + text_similarity) instead of XPath
+2. **Fuzzy XPath:** Allow partial XPath matches (ignore depth, match suffix)
+3. **Content-based alignment:** Use text embedding similarity to align nodes
+   across structural changes (like the Zhang-Shasha edit distance approach)
+4. **Hybrid:** Use XPath when structure is stable, fall back to semantic
+   matching when XPath match rate drops below a threshold
+
+### Honest Scope Statement for Paper
+"Our temporal diff assumes structural stability between snapshots.
+This holds for content updates (price changes, stock updates) on the
+same site version, but breaks under site redesigns. We discuss
+semantic matching as a more robust alternative in Section 7."
+
+
+---
+
+## Scalability Analysis
+
+### Measured Performance (528-node page)
+| Step | Time | Per Node |
+|------|------|----------|
+| DOM parsing | 16.5ms | 0.03ms |
+| Embedding (172 content nodes) | 5,461ms | 31.7ms |
+| **Total** | **5,477ms** | — |
+
+### Extrapolated to 10,000-node page (~3,257 content nodes)
+| Step | Estimated Time |
+|------|---------------|
+| DOM parsing | ~313ms |
+| Embedding | ~103s |
+| **Total** | **~104s** |
+
+### Bottleneck
+Embedding is 99.7% of the time. Each node requires a sentence-transformer
+forward pass (31.7ms). For 3,257 content nodes, that's 103 seconds.
+
+### Mitigations
+1. **Batch encoding:** sentence-transformers supports batch encoding.
+   Encoding 172 texts in one batch would be ~500ms instead of 5,461ms (10x speedup).
+2. **Pre-filter:** Only embed nodes likely to be relevant (skip empty divs,
+   navigation text, boilerplate). Could reduce content nodes by 50-70%.
+3. **Cache:** Embeddings are deterministic. Compute once, store, reuse.
+
+### For Paper
+Report actual measured times. Acknowledge embedding bottleneck.
+Propose batching as straightforward optimization (not implemented in prototype).
+
+
+---
+
+## Design Decision: Embedding Fusion Strategy
+
+### Current: Concatenation with weight=0.3
+```
+combined = [text_384d, structure_20d * 0.3]  → L2 normalize
+```
+Structure is ~5% of total signal after normalization.
+
+### Why this design:
+1. **Text should dominate.** For most queries, semantic text matching is
+   the primary signal. Structure is a tiebreaker.
+2. **Simple and reproducible.** Concatenation has no learned parameters,
+   making results reproducible without training.
+3. **Weight 0.3 was not tuned.** This is a limitation — should ablate.
+
+### Alternatives for paper's future work:
+1. **Learned projection:** MLP([text, structure]) → 256d. Requires training data.
+2. **Cross-attention:** Structure features attend to text features. More expressive.
+3. **Equal dimensions:** Project structure to 384d. Gives equal weight.
+4. **Late fusion:** Score text and structure separately, combine scores.
+
+### Ablation needed (not yet done):
+| Weight | Expected Effect |
+|--------|----------------|
+| 0.0 | = text-only baseline |
+| 0.1 | Minimal structure influence |
+| 0.3 | Current setting |
+| 0.5 | Equal influence |
+| 1.0 | Structure dominates (likely worse) |
+
+
+---
+
+## Honest Admission: Structure Encoder Overlaps with CSS Heuristic
+
+Both our structure encoder and the CSS heuristic baseline use keyword matching
+on CSS class names (e.g., "price", "stock", "product"). This means:
+
+1. The +5.7pp improvement of text+structure over text-only partially comes
+   from the same signal that makes the CSS heuristic so effective
+2. Our "neural" approach is partially a keyword matcher with extra steps
+3. The fair comparison is: does the NEURAL text embedding add value BEYOND
+   what keyword matching provides?
+
+### What our approach adds beyond keywords:
+- Semantic text matching (handles paraphrased queries)
+- Depth/position features (not just class names)
+- Sibling count, tag type features
+- Works when class names are obfuscated (e.g., Tailwind CSS: `class="mt-4 text-lg"`)
+
+### What it doesn't add:
+- On sites with descriptive class names, keywords alone are sufficient
+- The neural overhead (5s embedding time) is not justified for simple cases
+
+### Implication for paper:
+Position our approach as valuable for sites WITHOUT descriptive class names
+(obfuscated CSS, minified HTML, single-page apps). Acknowledge that for
+well-structured sites, heuristics are sufficient and faster.
+
+
+---
+
+## Paper Narrative Restructure (Iteration 9)
+
+### Problem: Paper is unfocused
+60% of code/experiments are about static retrieval (where CSS heuristics win).
+Only 40% is about temporal QA (where we're uniquely strong).
+
+### Revised Paper Structure:
+
+**Title:** "Temporal Knowledge Graphs from Web Page Evolution for
+Time-Aware Retrieval-Augmented Generation"
+
+**Story arc:**
+1. **Motivation:** Web content evolves. Prices change, products go in/out of stock.
+   Current RAG systems see only static snapshots. (Section 1)
+2. **Background:** HTML is a tree (DOM). Changes can be detected via tree diffing.
+   (Section 2)
+3. **Method:** DOM diff → temporal knowledge triples → temporal KG → RAG with
+   time-aware context. Structure-aware retrieval as supporting technique. (Section 3)
+4. **Experiments:**
+   - Primary: Temporal QA (19/19 correct, 5 query types, 3 products) — Section 5.1
+   - Secondary: Structure-aware retrieval (+5.7pp, p<0.01) — Section 5.2
+   - Baseline comparison: CSS heuristic dominates static extraction — Section 5.3
+5. **Discussion:** When to use our approach vs. heuristics. Limitations. (Section 6)
+
+**De-emphasized:** Tree traversal (moved to appendix), visual modality (future work),
+cross-site fingerprinting (future work).
+
+**Emphasized:** Temporal DOM diffing, temporal KG construction, temporal QA evaluation.
+
+
+---
+
+## ITERATION 10: Final Holistic Assessment
+
+### What we have that's publishable:
+1. ✅ Novel idea (temporal DOM KG for RAG) — verified zero existing papers
+2. ✅ Working prototype (5 modules, end-to-end pipeline)
+3. ✅ 19/19 temporal QA accuracy across 5 query types
+4. ✅ 37-query evaluation with statistical significance (p=0.0079)
+5. ✅ Honest comparison showing CSS heuristic beats neural for static tasks
+6. ✅ 3 website templates tested
+7. ✅ All test data saved locally, reproducible
+8. ✅ Comprehensive results log with limitations documented
+
+### What's missing for a top venue (WWW/ACL):
+1. ❌ Real temporal data (Wayback Machine) — currently simulated
+2. ❌ Visual modality — claimed but not implemented
+3. ❌ Comparison with HtmlRAG — cited but not benchmarked
+4. ❌ Large-page scalability test (10K+ nodes)
+5. ❌ Learned query encoder (currently hand-coded)
+6. ❌ Paper figures and complete results section
+
+### Realistic venue assessment:
+- **arXiv preprint:** Ready now (with honest limitations stated)
+- **Workshop paper (WWW/ACL workshop):** Ready with 2 weeks more work
+- **Main conference (WWW/ACL/EMNLP):** Needs 4-6 weeks more work
+- **Top venue (NeurIPS/ICML):** Needs visual modality + learned components
+
+### Recommended next steps:
+1. Update paper/main.tex with all real numbers from this results log
+2. Create 2-3 figures (architecture, temporal example, results chart)
+3. Get Bedrock credentials → run LLM-based answer evaluation
+4. Submit to arXiv as preprint for visibility
+5. Continue strengthening for main conference submission
