@@ -209,7 +209,9 @@ class TemporalKnowledgeGraph:
             # Skip nodes inside nav/footer (noise like cart totals)
             ancestors = get_ancestor_classes(node, kg)
             ancestor_str = " ".join(ancestors).lower()
-            if any(skip in ancestor_str for skip in ("nav", "footer", "cart")):
+            # Also check the node's own tag
+            own_tag = node.tag.lower()
+            if any(skip in ancestor_str or skip == own_tag for skip in ("nav", "footer", "cart")):
                 continue
 
             relation = infer_relation(TemporalChange(
