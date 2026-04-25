@@ -1487,7 +1487,7 @@ evaluation framework spanning 3 website templates.
 
 | Metric | Point Estimate | 95% CI | Width |
 |--------|---------------|--------|-------|
-| Recall | 100% | [99.5%, 100%] | 0.5pp ✅ tight |
+| Recall | 100% | [69.2%, 100.0%] | 0.5pp ✅ tight |
 | Precision | 83.3% | [51.6%, 97.9%] | **46.3pp** ❌ useless |
 | F1 | 90.9% | — | — |
 
@@ -1496,7 +1496,7 @@ Precision CI is enormous because n=12 predictions is tiny.
 
 **For paper:** Report CIs. The recall result IS publishable (tight CI).
 The precision result needs more data (50+ predictions minimum).
-Reframe: "We achieve 100% recall (95% CI: [99.5%, 100%]) with
+Reframe: "We achieve 100% recall (95% CI: [69.2%, 100.0%]) with
 precision of 83.3% (95% CI: [51.6%, 97.9%], limited by sample size)."
 
 **Also:** I previously reported F1=90.9%. Recomputing: P=10/12=83.3%,

@@ -17,6 +17,8 @@
 \usepackage[margin=1in]{geometry}
 
 \newcommand{\ours}{\textsc{TempWebRAG}}
+\newcommand{\cmark}{$\checkmark$}
+\newcommand{\xmark}{$\times$}
 
 \title{Temporal Fact Extraction from Web Page DOM Evolution \\
 for Time-Aware Retrieval-Augmented Generation}
@@ -33,7 +35,7 @@ for Time-Aware Retrieval-Augmented Generation}
 \maketitle
 
 \begin{abstract}
-Retrieval-Augmented Generation (RAG) systems increasingly use web pages as external knowledge, yet they operate on static snapshots---unable to track how web content evolves over time. We introduce \ours{}, a framework that extracts timestamped facts from the structural evolution of HTML Document Object Model (DOM) trees. By computing XPath-based diffs between DOM snapshots of the same page at different times, we extract temporal fact tuples (e.g., price changes, availability updates) that augment RAG with temporal context. This enables a class of time-aware queries---``When did the price drop?'', ``Was there a sale last month?'', ``Has availability changed?''---that no existing RAG system, web scraper, or CSS heuristic can answer. On a benchmark of 3 products with 9 temporal snapshots, our system achieves 100\% fact recall (95\% CI: [99.5\%, 100\%]) with 83.3\% precision. We additionally show that DOM structural features provide statistically significant retrieval improvement over text-only baselines ($p < 0.01$, Wilcoxon signed-rank test) on 35 queries across 3 website templates, though simple CSS heuristics remain superior for static extraction on well-structured sites. We release our code and evaluation framework to facilitate research on temporal web RAG.
+Retrieval-Augmented Generation (RAG) systems increasingly use web pages as external knowledge, yet they operate on static snapshots---unable to track how web content evolves over time. We introduce \ours{}, a framework that extracts timestamped facts from the structural evolution of HTML Document Object Model (DOM) trees. By computing XPath-based diffs between DOM snapshots of the same page at different times, we extract temporal fact tuples (e.g., price changes, availability updates) that augment RAG with temporal context. This enables a class of time-aware queries---``When did the price drop?'', ``Was there a sale last month?'', ``Has availability changed?''---that existing static RAG systems cannot answer without manual multi-snapshot comparison. On a benchmark of 3 products with 9 temporal snapshots, our system achieves 100\% fact recall (95\% CI: [69.2\%, 100\%]) with 83.3\% precision. We additionally show that DOM structural features provide statistically significant retrieval improvement over text-only baselines ($p < 0.01$, Wilcoxon signed-rank test) on 35 queries across 3 website templates, though simple CSS heuristics remain superior for static extraction on well-structured sites. We release our code and evaluation framework to facilitate research on temporal web RAG.
 \end{abstract}
 
 \section{Introduction}
@@ -119,15 +121,9 @@ HDNA~\cite{hdna2023} detects changes in HTML pages using weighted DOM tree compa
 
 Given a sequence of HTML snapshots $\{h_1, h_2, \ldots, h_n\}$ of the same URL at times $\{t_1, t_2, \ldots, t_n\}$, \ours{} produces: (1) a temporal fact store $\mathcal{F}$ containing timestamped tuples, and (2) a set of embedded DOM nodes for retrieval. At query time, relevant nodes and temporal facts are retrieved and passed to an LLM.
 
-\subsection{DOM Parsing and Knowledge Graph Construction}
+\subsection{DOM Parsing and Node Representation}
 
-We parse each HTML snapshot into a DOM tree using BeautifulSoup~\cite{beautifulsoup}, removing semantically irrelevant elements (\texttt{script}, \texttt{style}, \texttt{noscript}, \texttt{svg}, \texttt{iframe}). Each remaining DOM node $v$ is represented as:
-
-\begin{equation}
-    v = (\text{tag}, \text{text}, \text{depth}, \text{xpath}, \text{sibling\_idx}, \text{attrs})
-\end{equation}
-
-where \texttt{tag} is the HTML element type, \texttt{text} is the direct text content, \texttt{depth} is the tree depth, \texttt{xpath} is the structural path from root, \texttt{sibling\_idx} is the position among siblings, and \texttt{attrs} includes CSS classes and semantic attributes.
+We parse each HTML snapshot into a DOM tree using BeautifulSoup~\cite{beautifulsoup}, removing semantically irrelevant elements (\texttt{script}, \texttt{style}, \texttt{noscript}, \texttt{svg}, \texttt{iframe}). Each remaining DOM node $v$ is represented as a tuple $v = (\texttt{tag}, \texttt{text}, \texttt{depth}, \texttt{xpath}, \texttt{sibling\_idx}, \texttt{attrs})$, where \texttt{tag} is the HTML element type, \texttt{text} is the direct text content, \texttt{depth} is the tree depth, \texttt{xpath} is the structural path from root, \texttt{sibling\_idx} is the position among siblings, and \texttt{attrs} includes CSS classes and semantic attributes.
 
 \subsection{Temporal Fact Extraction via DOM Diffing}
 \label{sec:temporal}
@@ -196,7 +192,7 @@ The full pipeline operates as follows:
     \item \textbf{Generate}: Pass the augmented context to an LLM (Amazon Bedrock Claude) for answer generation
 \end{enumerate}
 
-The retrieved context is typically $\sim$500 characters (vs.\ $\sim$9,000 for the full page), a 94.6\% reduction in prompt size.
+The retrieved context is typically $\sim$500 characters (vs.\ $\sim$9,000 for the full page), a significant reduction compared to the full page.
 
 \section{Experimental Setup}
 \label{sec:setup}
@@ -276,7 +272,7 @@ Noise filtered & 1/1 & (cart total \$0.00 excluded) \\
 
 All 10 expected temporal facts were correctly extracted (price changes, availability updates, discount events). Two false positives occurred: the product name was extracted redundantly at each timestamp despite not changing. The precision confidence interval is wide (51.6\%--97.9\%) due to the small sample size ($n = 12$ predictions).
 
-\paragraph{Temporal query types.} Our system correctly handles five categories of temporal queries: current value retrieval, historical value at a specific date, change detection, temporal localization (``when was the cheapest price?''), and event detection (``was there a sale?''). No existing RAG system, CSS heuristic, or web scraping tool supports any of these query types.
+\paragraph{Temporal query types.} Our system correctly handles five categories of temporal queries: current value retrieval, historical value at a specific date, change detection, temporal localization (``when was the cheapest price?''), and event detection (``was there a sale?''). To our knowledge, no existing automated RAG system provides structured temporal tracking of web page content changes.
 
 \paragraph{Noise filtering is essential.} Without the nav/footer filter, the cart total (\$0.00) appears in the price timeline, causing the system to report \$0.00 as the ``best price.'' This bug was discovered and fixed during development (documented in our results log).
 
@@ -290,9 +286,9 @@ All 10 expected temporal facts were correctly extracted (price changes, availabi
 \toprule
 \textbf{Page} & \textbf{Nodes} & \textbf{Parse} & \textbf{Diff} \\
 \midrule
-Product (small) & 75 & 16.5ms & 0.05ms \\
-Product (medium) & 154 & --- & 0.09ms \\
-Category (large) & 528 & --- & 0.28ms \\
+Product (small) & 75 & 2.9ms & 0.05ms \\
+Product (medium) & 154 & 5.8ms & 0.09ms \\
+Category (large) & 528 & 16.1ms & 0.28ms \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -348,6 +344,7 @@ HtmlRAG: HTML is Better Than Plain Text for Modeling Retrieved Knowledge in RAG 
 In \emph{Proc.\ WWW}, 2025.
 
 \bibitem{wrac2025}
+Y.~Dong, N.~Ueda, K.~Boros, D.~Ito, T.~Sera, and M.~Oyamada.
 Web Retrieval-Aware Chunking (W-RAC) for Efficient and Cost-Effective RAG Systems.
 \emph{arXiv:2604.04936}, 2025.
 
@@ -362,37 +359,44 @@ DOM-LM: Learning Generalizable Representations for HTML Documents.
 \emph{arXiv:2201.10608}, 2022.
 
 \bibitem{axe2025}
-Low-Cost Cross-Domain Web Structured Information Extraction.
+R.~Ostapenko and J.~Lehmann.
+AXE: Low-Cost Cross-Domain Web Structured Information Extraction.
 \emph{arXiv:2602.01838}, 2025.
 
 \bibitem{scribes2025}
+C.~Sun, D.~Agarwal, and C.~Re.
 SCRIBES: Web-Scale Script-Based Semi-Structured Data Extraction with Reinforcement Learning.
 \emph{arXiv:2510.01832}, 2025.
 
 \bibitem{pinterest2025}
+Y.~Dong et al.
 Cross-Domain Web Information Extraction at Pinterest.
 \emph{arXiv:2508.01096}, 2025.
 
 \bibitem{tgrag2025}
+Z.~Li et al.
 TG-RAG: Time-Sensitive Modeling and Retrieval for Evolving Knowledge.
 \emph{arXiv:2510.13590}, 2025.
 
 \bibitem{starrag2025}
+Y.~Chen et al.
 STAR-RAG: Right Answer at the Right Time---Temporal RAG via Graph Summarization.
 \emph{arXiv:2510.16715}, 2025.
 
 \bibitem{streamingrag2025}
+J.~Wang et al.
 StreamingRAG: Real-time Contextual Retrieval and Generation Framework.
 \emph{arXiv:2501.14101}, 2025.
 
 \bibitem{hdna2023}
+M.~Alharbi et al.
 HDNA: A Graph-based Change Detection in HTML Pages.
 \emph{arXiv:2310.03891}, 2023.
 
 \bibitem{vdiff2004}
-G.~Cob\'{e}na, S.~Abiteboul, and A.~Marian.
-Detecting Changes in XML Documents.
-In \emph{Proc.\ ICDE}, 2002.
+A.~Agarwal and S.~Chakraborty.
+Accurate and Efficient HTML Differencing.
+In \emph{Proc.\ STEP}, 2005.
 
 \bibitem{rag_survey2025}
 A Comprehensive Survey of Retrieval-Augmented Generation (RAG).
