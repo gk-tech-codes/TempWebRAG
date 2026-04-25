@@ -1302,3 +1302,177 @@ queries that no existing approach supports."
 - Novel algorithms
 - Production-ready system
 - Works on all websites
+
+
+---
+
+## ITERATIONS 31-35: World-Class Brutal Review
+
+### I31: Toy sites ≠ real sites — the generalization gap is enormous
+**Quantified gap:**
+
+| Metric | Our test sites | Real Amazon/Walmart |
+|--------|---------------|-------------------|
+| HTML size | 9-50K chars | 500K-2M chars |
+| DOM nodes | 75-528 | 5,000-15,000 |
+| Content nodes | 36-172 | 1,000-3,000 |
+| Max depth | 13 | 25-40 |
+| CSS classes | 38 | 500-2,000 |
+| JS-rendered | No | Yes (React/Next.js) |
+| Ads/tracking | No | Yes (dozens of injected elements) |
+
+**Our test sites are 50-200x smaller and structurally trivial.**
+
+**Impact:** Every number in our paper (Top-1, Top-3, MRR, F1) is measured
+on sites that are not representative of real e-commerce. A reviewer from
+industry would dismiss these results immediately.
+
+**The only honest path:** Acknowledge this explicitly in the paper as a
+limitation, AND add at least one test on a real site's saved HTML
+(e.g., from Common Crawl or a manually saved Amazon page).
+
+
+### I32: Missing systematic comparison table for related work
+
+This table should appear in Section 2 of the paper:
+
+| System | DOM-Aware | Temporal | Structure Embed | Cross-Site | RAG | Open Source |
+|--------|-----------|----------|----------------|------------|-----|-------------|
+| Plain text RAG | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
+| HtmlRAG (WWW'25) | ✅ block-tree | ❌ | ❌ text only | ❌ | ✅ | ✅ |
+| W-RAC (2025) | ✅ chunking | ❌ | ❌ | ❌ | ✅ | ❌ |
+| MarkupLM (ACL'22) | ✅ XPath | ❌ | ✅ learned | ❌ | ❌ | ✅ |
+| DOM-LM (2022) | ✅ tree pos | ❌ | ✅ learned | ❌ | ❌ | ✅ |
+| AXE (2025) | ✅ pruning | ❌ | ❌ | ✅ 88% F1 | ❌ | ✅ |
+| Pinterest IE (2025) | ✅ tri-modal | ❌ | ✅ struct+visual | ✅ | ❌ | ❌ |
+| ColPali (2024) | ❌ visual | ❌ | ✅ patches | ❌ | ✅ | ✅ |
+| TG-RAG (2025) | ❌ text | ✅ text KG | ❌ | ❌ | ✅ | ❌ |
+| CSS heuristic | ✅ rules | ❌ | ❌ | ❌ | ❌ | N/A |
+| **Ours** | **✅ node-level** | **✅ DOM diff** | **✅ hand-crafted** | **partial** | **✅** | **✅** |
+
+**Key insight from this table:** We are the ONLY system with both
+DOM-awareness AND temporal tracking AND RAG integration. That's the
+unique intersection. But our structure embeddings are hand-crafted
+(not learned like MarkupLM/Pinterest), which is a weakness.
+
+
+### I33: Failure mode analysis — wrong retrieval causes hallucination risk
+**Verified:** For "What is the product name?" on the Sapiens page:
+
+| Rank | Retrieved Node | Is Correct? |
+|------|---------------|-------------|
+| 1 | "Product Description" | ❌ (section header, not the name) |
+| 2 | "Product Type" | ❌ (table header) |
+| 3 | "Product Information" | ❌ (section header) |
+| 4 | "Products you recently viewed" | ❌ |
+| 5 | "End of product page" | ❌ |
+| ... | | |
+| 13+ | "Sapiens: A Brief History..." | ✅ (correct, but never retrieved) |
+
+**The LLM receives ZERO useful context.** It would either:
+- Hallucinate a product name from surrounding text (dangerous)
+- Say "I don't know" (safe but useless)
+- Guess from "Product Description" section content (unreliable)
+
+**This is a SAFETY issue.** Our system has no mechanism to detect
+"I retrieved irrelevant context" and fall back to "I don't know."
+
+**Required for paper:** Add a confidence threshold. If the top retrieval
+score is below a threshold, return "insufficient context" instead of
+passing garbage to the LLM. Report the false-positive rate (queries
+where we retrieve confidently but incorrectly).
+
+
+### I34: Missing ethics statement
+**Required by ACL/EMNLP/NeurIPS.** Our system enables:
+
+**Positive uses:**
+- Consumer protection (detecting price manipulation)
+- Price transparency (tracking inflation)
+- Accessibility (structured data for screen readers)
+- Research (studying web content evolution)
+
+**Negative uses:**
+- Competitor surveillance (scraping competitor prices)
+- Automated arbitrage (buy low, sell high across sites)
+- ToS violation (most sites prohibit automated scraping)
+- Privacy (tracking user-specific pricing via personalization)
+
+**For paper's Ethics Statement:**
+"Our system processes publicly available web content. We do not scrape
+sites that prohibit it in their robots.txt or Terms of Service. Our
+temporal tracking operates on static HTML snapshots and does not
+interact with user accounts or personalized content. We release our
+code for research purposes and encourage responsible use in compliance
+with applicable laws and website policies. Our evaluation uses only
+public test sites designed for scraping practice (books.toscrape.com,
+webscraper.io) and does not access real commercial e-commerce sites."
+
+
+### I35: Final contribution list — verified, evidence-backed, no fluff
+
+---
+
+**CONTRIBUTION 1: Temporal fact extraction from DOM evolution (PRIMARY)**
+- *What:* XPath-based diff between DOM snapshots → timestamped fact triples
+- *Evidence:* 10/10 recall, 75% precision, F1=85.7% on 2 products, 6 snapshots
+- *Novelty:* Zero existing papers combine DOM diffing with RAG (verified via search)
+- *Limitation:* Simulated data, XPath fragility, single-product pages only
+- *Verified in code:* `src/webtkgrag/temporal.py`, `eval/temporal_eval_v2.py`
+
+**CONTRIBUTION 2: Structure-aware retrieval for HTML RAG (SECONDARY)**
+- *What:* DOM structural features (depth, tag, ancestor context) augment text embeddings
+- *Evidence:* +5.7pp Top-1, p=0.0079 on 35 queries across 3 website templates
+- *Novelty:* Incremental over MarkupLM/Pinterest IE; our contribution is applying it to RAG
+- *Limitation:* CSS heuristics achieve 91.4% vs our 28.6% on static extraction; features fail on obfuscated CSS; hand-coded query profiles
+- *Verified in code:* `src/webtkgrag/embedding.py`, `eval/comprehensive_eval.py`
+
+**CONTRIBUTION 3: Honest empirical findings (SUPPORTING)**
+- *Finding 1:* CSS heuristics beat neural approaches for static extraction on well-structured sites (91.4% vs 28.6%, p=0.0007)
+- *Finding 2:* Sentence-transformer similarity between "$99.99" and "$0.00" differs by only 3% — structure provides the tiebreaker
+- *Finding 3:* DOM tree traversal visits MORE nodes than brute force on deeply nested pages (not fewer, as commonly assumed)
+- *Verified in code:* `eval/comprehensive_eval.py`, `eval/results.md`
+
+**NOT CLAIMED (killed during review):**
+- ~~Tri-modal embeddings~~ (visual not implemented)
+- ~~Sub-linear retrieval~~ (tree traversal is slower)
+- ~~Cross-site fingerprinting~~ (not implemented)
+- ~~Knowledge graph~~ (it's a fact store)
+- ~~Works on real e-commerce sites~~ (tested on toy sites only)
+- ~~Zhang-Shasha tree edit distance~~ (we use XPath hash matching)
+
+---
+
+## ABSOLUTE FINAL STATE
+
+### The paper in its most honest form:
+
+**Title:** "Temporal Fact Extraction from Web Page DOM Evolution
+for Time-Aware Retrieval-Augmented Generation"
+
+**Abstract (final):**
+Web content evolves — prices change, products go in and out of stock,
+sales begin and end — yet RAG systems operate on static snapshots.
+We present a method for extracting timestamped facts from the structural
+evolution of HTML DOM trees, enabling time-aware queries that no existing
+RAG system supports. By computing XPath-based diffs between DOM snapshots
+of the same page over time, we construct a temporal fact store that
+captures price changes, availability updates, and promotional events
+with 85.7% F1. We additionally show that DOM structural features provide
+statistically significant retrieval improvement (p < 0.01) over text-only
+baselines, though simple CSS heuristics remain superior for static
+extraction on well-structured sites. We release our code and a 37-query
+evaluation framework spanning 3 website templates.
+
+**Venue:** WWW 2027 (Web Conference) — systems track
+
+### Confidence in each claim:
+
+| Claim | Confidence | Can reviewer verify? |
+|-------|-----------|---------------------|
+| Temporal fact extraction works | 85% | Yes: `temporal_eval_v2.py` |
+| F1=85.7% | 95% | Yes: computed from 10 facts |
+| p=0.0079 for structure | 95% | Yes: `comprehensive_eval.py` |
+| CSS heuristic beats neural | 99% | Yes: 91.4% vs 28.6% |
+| No existing paper does this | 90% | Partially: search results documented |
+| Works on real sites | 30% | No: only tested on toy sites |
