@@ -19,7 +19,7 @@ practical for HTML where node identity is defined by position.
 import numpy as np
 from dataclasses import dataclass, field
 from datetime import datetime
-from phase1_dom_knowledge_graph import DOMKnowledgeGraph, DOMNode
+from webtkgrag.dom_parser import DOMKnowledgeGraph, DOMNode
 
 
 # ============================================================

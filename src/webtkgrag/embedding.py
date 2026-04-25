@@ -21,7 +21,7 @@ import requests
 import time
 from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
-from phase1_dom_knowledge_graph import DOMKnowledgeGraph, DOMNode
+from webtkgrag.dom_parser import DOMKnowledgeGraph, DOMNode
 
 # Load model once
 print("Loading sentence-transformer model...")

@@ -17,8 +17,8 @@ import requests
 import numpy as np
 from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
-from phase1_dom_knowledge_graph import DOMKnowledgeGraph
-from phase2_rigorous import (
+from webtkgrag.dom_parser import DOMKnowledgeGraph
+from webtkgrag.embedding import (
     encode_text_real, encode_node_trimodal, encode_node_textonly,
     cosine_sim, TEXT_MODEL,
 )

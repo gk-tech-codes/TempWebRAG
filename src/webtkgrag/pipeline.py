@@ -21,11 +21,11 @@ import sys
 import requests
 import numpy as np
 from dataclasses import dataclass
-from phase1_dom_knowledge_graph import DOMKnowledgeGraph
-from phase2_rigorous import (
+from webtkgrag.dom_parser import DOMKnowledgeGraph
+from webtkgrag.embedding import (
     encode_text_real, encode_node_trimodal, cosine_sim, TEXT_MODEL,
 )
-from phase4_temporal_diffing import (
+from webtkgrag.temporal import (
     TemporalKnowledgeGraph, compute_dom_diff, get_ancestor_classes,
 )
 
