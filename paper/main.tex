@@ -14,6 +14,7 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{xcolor}
+\usepackage{textcomp}
 \usepackage[margin=1in]{geometry}
 
 \newcommand{\ours}{\textsc{TempWebRAG}}
@@ -146,7 +147,7 @@ This is an $O(n)$ operation using hash-based XPath lookup, not the $O(n^2)$ Zhan
 
 \paragraph{Step 3: Relation Inference.} For each change, we infer the semantic relation using rule-based classification:
 \begin{itemize}
-    \item Text matching currency patterns ($\$, \pounds, \euro$) $\rightarrow$ \texttt{price}
+    \item Text matching currency patterns ($\$, \pounds, \texteuro$) $\rightarrow$ \texttt{price}
     \item Text containing availability keywords $\rightarrow$ \texttt{availability}
     \item Text containing discount keywords $\rightarrow$ \texttt{discount}
     \item Heading tags (\texttt{h1}-\texttt{h6}) $\rightarrow$ \texttt{name}
