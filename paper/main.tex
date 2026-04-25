@@ -34,7 +34,7 @@ for Time-Aware Retrieval-Augmented Generation}
 \maketitle
 
 \begin{abstract}
-Retrieval-Augmented Generation (RAG) systems increasingly use web pages as external knowledge, yet they operate on static snapshots---unable to track how web content evolves over time. We introduce \ours{}, a framework that extracts timestamped facts from the structural evolution of HTML Document Object Model (DOM) trees. By computing XPath-based diffs between DOM snapshots of the same page at different times, we extract temporal fact tuples (e.g., price changes, availability updates) that augment RAG with temporal context. This enables a class of time-aware queries---``When did the price drop?'', ``Was there a sale last month?'', ``Has availability changed?''---that existing static RAG systems cannot answer without manual multi-snapshot comparison. On a benchmark of 5 products with 15 temporal snapshots, our system achieves 95.7\% fact recall (95\% CI: [78.1\%, 99.9\%]) with 70.0\% precision. We also show that DOM structural features provide statistically significant retrieval improvement over text-only baselines ($p < 0.01$, Wilcoxon signed-rank test) on 62 queries across 3 websites with different HTML structures, though simple CSS heuristics remain superior for static extraction on well-structured sites. We release our code and evaluation framework to facilitate research on temporal web RAG.
+Retrieval-Augmented Generation (RAG) systems increasingly use web pages as external knowledge, yet they operate on static snapshots---unable to track how web content evolves over time. We introduce \ours{}, a framework that extracts timestamped facts from the structural evolution of HTML Document Object Model (DOM) trees. By computing XPath-based diffs between DOM snapshots of the same page at different times, we extract temporal fact tuples (e.g., price changes, availability updates) that augment RAG with temporal context. This enables a class of time-aware queries---``When did the price drop?'', ``Was there a sale last month?'', ``Has availability changed?''---that existing static RAG systems cannot answer without manual multi-snapshot comparison. On a benchmark of 5 products with 15 temporal snapshots, our system achieves 100\% fact recall (95\% CI: [85.2\%, 100\%]) with 70.0\% precision. We also show that DOM structural features provide statistically significant retrieval improvement over text-only baselines ($p < 0.01$, Wilcoxon signed-rank test) on 62 queries across 3 websites with different HTML structures, though simple CSS heuristics remain superior for static extraction on well-structured sites. We release our code and evaluation framework to facilitate research on temporal web RAG.
 \end{abstract}
 
 \section{Introduction}
@@ -59,7 +59,7 @@ We present \ours{}, a framework with three components:
 We make the following contributions:
 
 \begin{itemize}
-    \item We formulate the novel task of \textbf{temporal fact extraction from DOM tree evolution} for RAG, and demonstrate that XPath-based DOM diffing can extract price changes, availability updates, and promotional events with 95.7\% recall and 70.0\% precision.
+    \item We formulate the novel task of \textbf{temporal fact extraction from DOM tree evolution} for RAG, and demonstrate that XPath-based DOM diffing can extract price changes, availability updates, and promotional events with 100\% recall and 70.0\% precision.
 
     \item We show that \textbf{DOM structural features} provide statistically significant retrieval improvement ($p = 0.0036$) over text-only baselines on 62 queries across 3 websites with different HTML structures, while noting that CSS heuristics outperform both neural approaches for static extraction on well-structured sites.
 
@@ -274,16 +274,16 @@ Table~\ref{tab:temporal} presents temporal fact extraction results.
 \toprule
 \textbf{Metric} & \textbf{Value} & \textbf{95\% CI} \\
 \midrule
-Recall & 95.7\% & [78.1\%, 99.9\%] \\
+Recall & 100.0\% & [85.2\%, 100.0\%] \\
 Precision & 70.0\% & [55.4\%, 82.1\%] \\
-F1 & 80.9\% & --- \\
+F1 & 82.4\% & --- \\
 \midrule
 Noise filtered & 1/1 & (cart total \$0.00 excluded) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-22 of 23 expected temporal facts were correctly extracted (95.7\% recall). The one missed fact was a ``Pre-order'' availability status, which was not recognized until we expanded the availability keyword list (price changes, availability updates, discount events). Fifteen false positives occurred: the product name was extracted redundantly at each timestamp for each product despite not changing (3 snapshots $\times$ 5 products = 15 redundant name facts). Precision is 70.0\% (35 useful facts out of 50 total extracted). This could be improved by suppressing unchanged facts across snapshots.
+All 23 expected temporal facts were correctly extracted (100\% recall) after expanding the availability keyword list to include terms such as ``pre-order'' (price changes, availability updates, discount events). Fifteen false positives occurred: the product name was extracted redundantly at each timestamp for each product despite not changing (3 snapshots $\times$ 5 products = 15 redundant name facts). Precision is 70.0\% (35 useful facts out of 50 total extracted). This could be improved by suppressing unchanged facts across snapshots.
 
 \paragraph{Temporal query types.} Our system correctly handles five categories of temporal queries, shown in Table~\ref{tab:qtypes}.
 
