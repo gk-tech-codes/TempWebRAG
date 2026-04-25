@@ -1,0 +1,30 @@
+# Byte-compiled
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv/
+env/
+
+# Model cache
+.cache/
+models/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Data (too large for git)
+data/raw_html/
+data/crawl_cache/
+
+# Outputs
+results/
+*.log
