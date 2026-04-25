@@ -170,11 +170,6 @@ class DOMKnowledgeGraph:
                 )
                 if child_id >= 0:
                     node.children_ids.append(child_id)
-            elif isinstance(child, NavigableString):
-                text = child.strip()
-                if text and tag_name not in STRUCTURAL_TAGS:
-                    # Attach direct text as the node's own text (already done above)
-                    pass
 
         self.nodes[node_id] = node
         return node_id

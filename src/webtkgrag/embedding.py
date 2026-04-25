@@ -23,10 +23,22 @@ from dataclasses import dataclass
 from sentence_transformers import SentenceTransformer
 from webtkgrag.dom_parser import DOMKnowledgeGraph, DOMNode
 
-# Load model once
-print("Loading sentence-transformer model...")
-TEXT_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
-print(f"  Model loaded. Embedding dim: {TEXT_MODEL.get_sentence_embedding_dimension()}")
+# Lazy model loading — avoids 2-3s delay on every import
+_TEXT_MODEL = None
+
+def _get_model():
+    global _TEXT_MODEL
+    if _TEXT_MODEL is None:
+        print("Loading sentence-transformer model...")
+        _TEXT_MODEL = SentenceTransformer("all-MiniLM-L6-v2")
+        print(f"  Model loaded. Embedding dim: {_TEXT_MODEL.get_sentence_embedding_dimension()}")
+    return _TEXT_MODEL
+
+# Keep backward-compatible reference for imports
+def get_text_model():
+    return _get_model()
+
+TEXT_MODEL = None  # Deprecated: use _get_model() or get_text_model()
 
 
 # ============================================================
@@ -37,7 +49,7 @@ def encode_text_real(text: str) -> np.ndarray:
     """384-dim embedding from sentence-transformers."""
     if not text.strip():
         return np.zeros(384, dtype=np.float32)
-    return TEXT_MODEL.encode(text, normalize_embeddings=True)
+    return _get_model().encode(text, normalize_embeddings=True)
 
 
 # ============================================================

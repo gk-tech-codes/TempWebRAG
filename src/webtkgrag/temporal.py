@@ -16,7 +16,6 @@ that aligns nodes by their XPath + tag structure, which is more
 practical for HTML where node identity is defined by position.
 """
 
-import numpy as np
 from dataclasses import dataclass, field
 from datetime import datetime
 from webtkgrag.dom_parser import DOMKnowledgeGraph, DOMNode

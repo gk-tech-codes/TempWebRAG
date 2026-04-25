@@ -23,7 +23,7 @@ import numpy as np
 from dataclasses import dataclass
 from webtkgrag.dom_parser import DOMKnowledgeGraph
 from webtkgrag.embedding import (
-    encode_text_real, encode_node_trimodal, cosine_sim, TEXT_MODEL,
+    encode_text_real, encode_node_trimodal, cosine_sim,
 )
 from webtkgrag.temporal import (
     TemporalKnowledgeGraph, compute_dom_diff, get_ancestor_classes,

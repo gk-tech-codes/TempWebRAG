@@ -20,7 +20,7 @@ from sentence_transformers import SentenceTransformer
 from webtkgrag.dom_parser import DOMKnowledgeGraph
 from webtkgrag.embedding import (
     encode_text_real, encode_node_trimodal, encode_node_textonly,
-    cosine_sim, TEXT_MODEL,
+    cosine_sim,
 )
 
 
