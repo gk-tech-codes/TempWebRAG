@@ -171,7 +171,7 @@ def infer_relation(change: TemporalChange) -> str:
         return "price"
 
     # Availability
-    avail_words = {"stock", "available", "sold out", "unavailable", "left", "ships"}
+    avail_words = {"stock", "available", "sold out", "unavailable", "left", "ships", "pre-order", "preorder", "backorder", "delivery"}
     if any(w in text.lower() for w in avail_words):
         return "availability"
 

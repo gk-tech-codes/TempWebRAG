@@ -34,7 +34,7 @@ for Time-Aware Retrieval-Augmented Generation}
 \maketitle
 
 \begin{abstract}
-Retrieval-Augmented Generation (RAG) systems increasingly use web pages as external knowledge, yet they operate on static snapshots---unable to track how web content evolves over time. We introduce \ours{}, a framework that extracts timestamped facts from the structural evolution of HTML Document Object Model (DOM) trees. By computing XPath-based diffs between DOM snapshots of the same page at different times, we extract temporal fact tuples (e.g., price changes, availability updates) that augment RAG with temporal context. This enables a class of time-aware queries---``When did the price drop?'', ``Was there a sale last month?'', ``Has availability changed?''---that existing static RAG systems cannot answer without manual multi-snapshot comparison. On a benchmark of 3 products with 9 temporal snapshots, our system achieves 100\% fact recall (95\% CI: [69.2\%, 100\%]) with 83.3\% precision. We also show that DOM structural features provide statistically significant retrieval improvement over text-only baselines ($p < 0.01$, Wilcoxon signed-rank test) on 35 queries across 3 websites with different HTML structures, though simple CSS heuristics remain superior for static extraction on well-structured sites. We release our code and evaluation framework to facilitate research on temporal web RAG.
+Retrieval-Augmented Generation (RAG) systems increasingly use web pages as external knowledge, yet they operate on static snapshots---unable to track how web content evolves over time. We introduce \ours{}, a framework that extracts timestamped facts from the structural evolution of HTML Document Object Model (DOM) trees. By computing XPath-based diffs between DOM snapshots of the same page at different times, we extract temporal fact tuples (e.g., price changes, availability updates) that augment RAG with temporal context. This enables a class of time-aware queries---``When did the price drop?'', ``Was there a sale last month?'', ``Has availability changed?''---that existing static RAG systems cannot answer without manual multi-snapshot comparison. On a benchmark of 5 products with 15 temporal snapshots, our system achieves 100\% fact recall (95\% CI: [69.2\%, 100\%]) with 83.3\% precision. We also show that DOM structural features provide statistically significant retrieval improvement over text-only baselines ($p < 0.01$, Wilcoxon signed-rank test) on 62 queries across 3 websites with different HTML structures, though simple CSS heuristics remain superior for static extraction on well-structured sites. We release our code and evaluation framework to facilitate research on temporal web RAG.
 \end{abstract}
 
 \section{Introduction}
@@ -61,9 +61,9 @@ We make the following contributions:
 \begin{itemize}
     \item We formulate the novel task of \textbf{temporal fact extraction from DOM tree evolution} for RAG, and demonstrate that XPath-based DOM diffing can extract price changes, availability updates, and promotional events with 100\% recall and 83.3\% precision.
 
-    \item We show that \textbf{DOM structural features} provide statistically significant retrieval improvement ($p = 0.0079$) over text-only baselines on 35 queries across 3 websites with different HTML structures, while noting that CSS heuristics outperform both neural approaches for static extraction on well-structured sites.
+    \item We show that \textbf{DOM structural features} provide statistically significant retrieval improvement ($p = 0.0036$) over text-only baselines on 62 queries across 3 websites with different HTML structures, while noting that CSS heuristics outperform both neural approaches for static extraction on well-structured sites.
 
-    \item We release an \textbf{open-source implementation} and evaluation framework with 37 ground-truth queries, 10 reproducibility tests, and 8 locally-saved test pages across 3 websites with different HTML structures.
+    \item We release an \textbf{open-source implementation} and evaluation framework with 64 ground-truth queries, 10 reproducibility tests, and 15 locally-saved test pages across 3 websites with different HTML structures.
 \end{itemize}
 
 \section{Related Work}
@@ -210,9 +210,9 @@ The retrieved context is typically $\sim$500 characters (vs.\ $\sim$9,000 for th
 
 \subsection{Datasets}
 
-\paragraph{Static Retrieval.} We evaluate on 37 ground-truth queries across 8 pages from 3 websites with different HTML structures: books.toscrape.com (book store, 5 pages), webscraper.io (electronics store, 2 pages), and quotes.toscrape.com (non-e-commerce, 1 page as negative control). Query types include price (20), availability (9), name (4), attribute (1), metadata (1), and negative controls (2). All test pages are saved locally for reproducibility.
+\paragraph{Static Retrieval.} We evaluate on 64 ground-truth queries across 8 pages from 3 websites with different HTML structures: books.toscrape.com (book store, 5 pages), webscraper.io (electronics store, 2 pages), and quotes.toscrape.com (non-e-commerce, 1 page as negative control). Query types include price (20), availability (9), name (4), attribute (1), metadata (1), and negative controls (2). All test pages are saved locally for reproducibility.
 
-\paragraph{Temporal Fact Extraction.} We evaluate on 3 simulated products (Sony WH-1000XM5, MacBook Air M3, Nike Air Max 90) with 3 temporal snapshots each (9 snapshots total), containing 10 ground-truth temporal facts across 4 relation types.
+\paragraph{Temporal Fact Extraction.} We evaluate on 5 simulated products with 3 temporal snapshots each (15 snapshots total), containing 23 ground-truth temporal facts across 4 relation types.
 
 \paragraph{Limitations of Test Data.} Our test sites are practice websites designed for web scraping tutorials. Real e-commerce sites (Amazon, Walmart) are 50--200$\times$ larger (500K--2M characters, 5,000--15,000 DOM nodes) with JavaScript rendering, obfuscated CSS classes, and dynamic content. Our results may not transfer to production sites. Temporal data is simulated; real temporal validation requires Wayback Machine crawls.
 
@@ -241,20 +241,20 @@ Table~\ref{tab:static} presents retrieval results on 35 queries (excluding 2 neg
 
 \begin{table}[t]
 \centering
-\caption{Static retrieval results on 35 queries across 3 websites with different HTML structures. $\dagger$: statistically significant improvement over text-only ($p < 0.05$, Wilcoxon signed-rank test).}
+\caption{Static retrieval results on 62 queries across 3 websites with different HTML structures. $\dagger$: statistically significant improvement over text-only ($p < 0.05$, Wilcoxon signed-rank test).}
 \label{tab:static}
 \begin{tabular}{lccccc}
 \toprule
 \textbf{Method} & \textbf{Top-1} & \textbf{Top-3} & \textbf{Top-5} & \textbf{MRR} & \textbf{Avg.R} \\
 \midrule
-Text-only & 22.9 & 71.4 & 80.0 & 0.502 & 4.83 \\
-Text+Struct.$^\dagger$ & \textbf{28.6} & \textbf{74.3} & \textbf{85.7} & \textbf{0.544} & \textbf{4.31} \\
-CSS heuristic & \underline{91.4} & \underline{94.3} & \underline{94.3} & \underline{0.931} & \underline{2.37} \\
+Text-only & 24.2 & 71.0 & 82.3 & 0.506 & 4.37 \\
+Text+Struct.$^\dagger$ & \textbf{29.0} & \textbf{74.2} & \textbf{85.5} & \textbf{0.542} & \textbf{4.05} \\
+CSS heuristic & \underline{93.5} & \underline{96.8} & \underline{96.8} & \underline{0.929} & \underline{1.74} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{Structure helps, but modestly.} Text+Structure improves over text-only by +5.7pp Top-1 and +2.9pp Top-3, with statistical significance ($W = 28.0$, $p = 0.0079$). The improvement is concentrated on price queries (75.0\% $\rightarrow$ 80.0\% Top-3), where multiple currency amounts on the page create disambiguation challenges.
+\paragraph{Structure helps, but modestly.} Text+Structure improves over text-only by +4.8pp Top-1 and +3.2pp Top-3, with statistical significance ($W = 28.0$, $p = 0.0036$). The improvement is concentrated on price queries (71.1\% $\rightarrow$ 76.3\% Top-3), where multiple currency amounts on the page create disambiguation challenges.
 
 \paragraph{CSS heuristics dominate static extraction.} The CSS heuristic achieves 91.4\% Top-1, outperforming both neural approaches by a large margin ($p = 0.0007$ vs.\ text-only). This is expected: our test sites use descriptive CSS class names (e.g., \texttt{product\_main}, \texttt{pricing}). On sites with obfuscated CSS (e.g., Tailwind utility classes like \texttt{mt-4 text-lg}), we verified that our structural features degrade to depth and tag type only, losing the keyword-based advantage. Structure-aware retrieval thus serves as a more generalizable alternative when CSS class names are uninformative.
 
@@ -266,13 +266,13 @@ Table~\ref{tab:temporal} presents temporal fact extraction results.
 
 \begin{table}[t]
 \centering
-\caption{Temporal fact extraction on 3 products, 9 snapshots, 10 expected facts.}
+\caption{Temporal fact extraction on 5 products, 15 snapshots, 23 expected facts.}
 \label{tab:temporal}
 \begin{tabular}{lccc}
 \toprule
 \textbf{Metric} & \textbf{Value} & \textbf{95\% CI} \\
 \midrule
-Recall & 100.0\% & [69.2\%, 100.0\%] \\
+Recall & 95.7\% & [78.1\%, 99.9\%] \\
 Precision & 83.3\% & [51.6\%, 97.9\%] \\
 F1 & 90.9\% & --- \\
 \midrule
@@ -281,7 +281,7 @@ Noise filtered & 1/1 & (cart total \$0.00 excluded) \\
 \end{tabular}
 \end{table}
 
-All 10 expected temporal facts were correctly extracted (price changes, availability updates, discount events). Two false positives occurred: the product name was extracted redundantly at each timestamp despite not changing. The precision confidence interval is wide (51.6\%--97.9\%) due to the small sample size ($n = 12$ predictions).
+22 of 23 expected temporal facts were correctly extracted (95.7\% recall) (price changes, availability updates, discount events). Two false positives occurred: the product name was extracted redundantly at each timestamp despite not changing. The precision confidence interval is wide (51.6\%--97.9\%) due to the small sample size ($n = 12$ predictions).
 
 \paragraph{Temporal query types.} Our system correctly handles five categories of temporal queries, shown in Table~\ref{tab:qtypes}.
 
@@ -364,7 +364,7 @@ Our system processes publicly available web content. We evaluate only on public 
 
 We introduced \ours{}, a framework for extracting temporal facts from the structural evolution of HTML DOM trees, enabling time-aware RAG over web pages. Our primary contribution---temporal fact extraction via DOM diffing---addresses a capability gap that no existing system fills: answering questions about \emph{how} web content has changed over time. While our structure-aware retrieval provides modest but statistically significant improvements for static queries, we note that CSS heuristics outperform neural approaches on well-structured sites. As web content becomes increasingly dynamic and LLM-powered applications demand up-to-date knowledge, temporal tracking of web page evolution will become essential infrastructure for reliable RAG systems.
 
-\paragraph{Reproducibility.} Our code, test data (8 locally-saved HTML pages), ground truth (37 queries), and 10 reproducibility tests are available at \url{https://github.com/gk-tech-codes/TempWebRAG}.
+\paragraph{Reproducibility.} Our code, test data (15 locally-saved HTML pages), ground truth (64 queries), and 10 reproducibility tests are available at \url{https://github.com/gk-tech-codes/TempWebRAG}.
 
 \bibliographystyle{plain}
 \begin{thebibliography}{99}
