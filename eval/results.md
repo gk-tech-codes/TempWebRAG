@@ -351,3 +351,89 @@ The improvement is LARGEST on pages with many confusing similar elements
 the scenario our paper targets. On simple pages with one clear price,
 text-only is already sufficient — and that's fine. Our contribution is
 for the HARD cases.
+
+
+---
+
+## Experiment 7: Comprehensive Evaluation (37 queries, 3 methods, statistical tests)
+
+**Date:** 2026-04-25
+**Objective:** Rigorous evaluation with ground truth, multiple baselines, and statistical significance.
+
+### Setup
+- **Ground truth:** 37 queries (35 positive + 2 negative controls)
+- **Pages:** 8 pages from 3 website templates (saved locally)
+- **Query types:** 20 price, 9 availability, 4 name, 1 attribute, 1 metadata, 2 negative
+- **Methods:**
+  1. text-only: sentence-transformer (all-MiniLM-L6-v2, 384-dim)
+  2. text+structure: text + 20-dim DOM structural features (weight=0.3)
+  3. css-heuristic: rule-based CSS class/tag pattern matching
+
+### Main Results (35 queries, excluding negative controls)
+
+| Method | Top-1 | Top-3 | Top-5 | MRR | Avg Rank |
+|--------|-------|-------|-------|-----|----------|
+| text-only (baseline) | 22.9% | 71.4% | 80.0% | 0.502 | 4.83 |
+| **text+structure (ours)** | **28.6%** | **74.3%** | **85.7%** | **0.544** | **4.31** |
+| css-heuristic | **91.4%** | **94.3%** | **94.3%** | **0.931** | **2.37** |
+
+### Statistical Significance
+- text-only vs text+structure: **W=28.0, p=0.0079 (p < 0.01)** ✅ Significant
+- text-only vs css-heuristic: W=50.0, p=0.0007
+- text+structure vs css-heuristic: W=46.5, p=0.0015
+
+### Per Query Type (Top-3 Accuracy)
+
+| Type | text-only | text+structure | css-heuristic | N |
+|------|-----------|---------------|---------------|---|
+| price | 75.0% | **80.0%** | **100.0%** | 20 |
+| availability | 100.0% | 100.0% | 100.0% | 9 |
+| name | 0.0% | 0.0% | **100.0%** | 4 |
+| attribute | 0.0% | 0.0% | 0.0% | 1 |
+| metadata | 100.0% | 100.0% | 0.0% | 1 |
+
+### Per Site (Top-3 Accuracy)
+
+| Site | text-only | text+structure | css-heuristic | N |
+|------|-----------|---------------|---------------|---|
+| books.toscrape | 69.2% | **73.1%** | **100.0%** | 26 |
+| webscraper.io | 77.8% | 77.8% | 77.8% | 9 |
+
+### Key Findings
+
+1. **Structure features provide statistically significant improvement** (p=0.0079)
+   over text-only: +5.7pp Top-1, +2.9pp Top-3, +5.7pp Top-5, +8.4% MRR
+
+2. **CSS heuristic CRUSHES both neural approaches** (91.4% vs 28.6% Top-1).
+   This is an important honest finding. Simple pattern matching on class names
+   like "price", "stock" is extremely effective on these test sites.
+
+3. **Structure helps most on price queries** (75% → 80% Top-3) where there
+   are multiple confusing currency amounts on the page.
+
+4. **Product name queries fail for both neural methods** (0% Top-3).
+   The sentence-transformer doesn't associate "product name" with `<h1>` content.
+   CSS heuristic gets 100% by simply looking for `<h1>` tags.
+
+5. **Bug found and fixed:** Query structure features were all zeros in initial
+   implementation, making text+structure identical to text-only. Fixed by
+   adding query-type-aware structure profiles.
+
+### Honest Assessment
+
+The CSS heuristic result is humbling but scientifically important:
+- For **known e-commerce patterns** (price in `.price` class, stock in `.stock`),
+  simple heuristics are hard to beat
+- Neural approaches add value when: (a) class names are non-standard,
+  (b) multiple similar elements exist, (c) the query is ambiguous
+- **Our temporal contribution remains unique** — no heuristic can answer
+  "when did the price change?"
+
+### Implications for Paper
+
+1. Must include CSS heuristic as a baseline (honest comparison)
+2. Position neural approach as complementary to heuristics, not replacement
+3. Emphasize temporal QA as the primary unique contribution
+4. Acknowledge that for simple extraction, heuristics are sufficient
+5. Our approach adds value for: temporal queries, cross-site generalization
+   on non-standard sites, and complex disambiguation scenarios
