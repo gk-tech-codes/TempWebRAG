@@ -40,7 +40,7 @@ Retrieval-Augmented Generation (RAG) systems increasingly use web pages as exter
 \section{Introduction}
 \label{sec:intro}
 
-The Web is the largest and most dynamic knowledge source available to Retrieval-Augmented Generation (RAG) systems~\cite{htmlrag2025,rag_survey2025}. Commercial systems such as Perplexity and SearchGPT retrieve web pages, extract their content, and feed it to large language models (LLMs) to generate grounded answers. However, current RAG pipelines treat web pages as static documents, discarding a fundamental property of web content: \emph{it changes over time}.
+The Web is the largest and most dynamic knowledge source available to Retrieval-Augmented Generation (RAG) systems~\cite{lewis2020rag,htmlrag2025,rag_survey2025}. Commercial systems such as Perplexity and SearchGPT retrieve web pages, extract their content, and feed it to large language models (LLMs) to generate grounded answers. However, current RAG pipelines treat web pages as static documents, discarding a fundamental property of web content: \emph{it changes over time}.
 
 Product prices fluctuate. Items go in and out of stock. Sales begin and end. Ratings accumulate. Yet when a user asks ``Has this product's price dropped recently?'' or ``When was the last time this was on sale?'', no existing RAG system can answer---because they have no memory of what the page looked like before.
 
@@ -116,7 +116,11 @@ HDNA~\cite{hdna2023} detects changes in HTML pages using weighted DOM tree compa
 \section{Method}
 \label{sec:method}
 
-\subsection{Overview}
+\subsection{Problem Definition}
+
+Given a URL $u$ and a sequence of HTML snapshots $\{h_1, h_2, \ldots, h_n\}$ captured at times $\{t_1, t_2, \ldots, t_n\}$, the \emph{temporal web fact extraction} task is to produce a set of timestamped fact tuples $\mathcal{F} = \{(e, r, v, t) \mid e \in \mathcal{E}, r \in \mathcal{R}, v \in \mathcal{V}, t \in \mathcal{T}\}$, where $e$ is an entity (identified by the page URL), $r$ is a relation (e.g., \texttt{price}, \texttt{availability}), $v$ is a value, and $t$ is a timestamp. The \emph{temporal web RAG} task is then: given a user query $q$ and the fact store $\mathcal{F}$, retrieve relevant facts and page context to generate an accurate, time-aware answer.
+
+\subsection{System Overview}
 
 Given a sequence of HTML snapshots $\{h_1, h_2, \ldots, h_n\}$ of the same URL at times $\{t_1, t_2, \ldots, t_n\}$, \ours{} produces: (1) a temporal fact store $\mathcal{F}$ containing timestamped tuples, and (2) a set of embedded DOM nodes for retrieval. At query time, relevant nodes and temporal facts are retrieved and passed to an LLM.
 
@@ -155,6 +159,14 @@ This is an $O(n)$ operation using hash-based XPath lookup, not the $O(n^2)$ Zhan
     f = (entity, relation, value, timestamp, xpath)
 \end{equation}
 where $entity$ is identified by the page URL (single-product pages) and $xpath$ provides provenance. We apply deduplication to prevent identical facts from appearing at multiple timestamps when unchanged.
+
+\paragraph{Example.} Consider a product page with price \texttt{\$349.99} at time $t_1$. At $t_2$, the price node changes to \texttt{\$279.99} and a new node \texttt{Spring Sale -20\%!} is inserted. Our system extracts:
+\begin{itemize}
+    \item $(u, \texttt{price}, \texttt{\$349.99}, t_1)$ --- from initial snapshot
+    \item $(u, \texttt{price}, \texttt{\$279.99}, t_2)$ --- from modified node
+    \item $(u, \texttt{discount}, \texttt{Spring Sale -20\%!}, t_2)$ --- from inserted node
+\end{itemize}
+A subsequent query ``When did the price drop?'' retrieves these facts and generates: ``The price dropped from \$349.99 to \$279.99 at $t_2$ during a Spring Sale.''
 
 \subsection{Structure-Aware Retrieval}
 \label{sec:retrieval}
@@ -244,7 +256,7 @@ CSS heuristic & \underline{91.4} & \underline{94.3} & \underline{94.3} & \underl
 
 \paragraph{Structure helps, but modestly.} Text+Structure improves over text-only by +5.7pp Top-1 and +2.9pp Top-3, with statistical significance ($W = 28.0$, $p = 0.0079$). The improvement is concentrated on price queries (75.0\% $\rightarrow$ 80.0\% Top-3), where multiple currency amounts on the page create disambiguation challenges.
 
-\paragraph{CSS heuristics dominate static extraction.} The CSS heuristic achieves 91.4\% Top-1, outperforming both neural approaches by a large margin ($p = 0.0007$ vs.\ text-only). This is because our test sites use descriptive CSS class names (e.g., \texttt{product\_main}, \texttt{pricing}). On sites with obfuscated CSS (e.g., Tailwind utility classes like \texttt{mt-4 text-lg}), we verified that our structural features degrade to depth and tag type only, losing the keyword-based advantage.
+\paragraph{CSS heuristics dominate static extraction.} The CSS heuristic achieves 91.4\% Top-1, outperforming both neural approaches by a large margin ($p = 0.0007$ vs.\ text-only). This is expected: our test sites use descriptive CSS class names (e.g., \texttt{product\_main}, \texttt{pricing}). On sites with obfuscated CSS (e.g., Tailwind utility classes like \texttt{mt-4 text-lg}), we verified that our structural features degrade to depth and tag type only, losing the keyword-based advantage. Structure-aware retrieval thus serves as a more generalizable alternative when CSS class names are uninformative.
 
 \paragraph{Product name queries fail.} Both neural methods achieve 0\% Top-3 on name queries, while the CSS heuristic achieves 100\% by simply matching \texttt{<h1>} tags. The sentence transformer does not strongly associate ``product name'' with heading content.
 
@@ -271,7 +283,27 @@ Noise filtered & 1/1 & (cart total \$0.00 excluded) \\
 
 All 10 expected temporal facts were correctly extracted (price changes, availability updates, discount events). Two false positives occurred: the product name was extracted redundantly at each timestamp despite not changing. The precision confidence interval is wide (51.6\%--97.9\%) due to the small sample size ($n = 12$ predictions).
 
-\paragraph{Temporal query types.} Our system correctly handles five categories of temporal queries: current value retrieval, historical value at a specific date, change detection, temporal localization (``when was the cheapest price?''), and event detection (``was there a sale?''). To our knowledge, no existing automated RAG system provides structured temporal tracking of web page content changes.
+\paragraph{Temporal query types.} Our system correctly handles five categories of temporal queries, shown in Table~\ref{tab:qtypes}.
+
+\begin{table}[t]
+\centering
+\caption{Temporal query types supported by \ours{}.}
+\label{tab:qtypes}
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Type} & \textbf{Example Query} & \textbf{N} \\
+\midrule
+Current value & ``What is the current price?'' & 5 \\
+Historical value & ``What was the price in January?'' & 4 \\
+Change detection & ``Has the price changed?'' & 4 \\
+Temporal localization & ``When was the cheapest price?'' & 4 \\
+Event detection & ``Was there a sale?'' & 2 \\
+\midrule
+\textbf{Total} & & \textbf{19} \\
+\bottomrule
+\end{tabular}
+\end{table} To our knowledge, no existing automated RAG system provides structured temporal tracking of web page content changes.
 
 \paragraph{Noise filtering is essential.} Without the nav/footer filter, the cart total (\$0.00) appears in the price timeline, causing the system to report \$0.00 as the ``best price.'' Empirical analysis revealed that without this filter, non-product prices contaminate the timeline.
 
@@ -426,6 +458,11 @@ TempRALM: Incorporating Temporality in Retrieval Augmented Language Models.
 M.~Iantosca, H.~Nagy, and W.~Sandri.
 Document Object Model Graph RAG: A Semantic Content Architecture for Neuro-Symbolic RAG.
 \emph{Medium}, 2024.
+
+\bibitem{lewis2020rag}
+P.~Lewis, E.~Perez, A.~Piktus, F.~Petroni, V.~Karpukhin, N.~Goyal, H.~K\"{u}ttler, M.~Lewis, W.~Yih, T.~Rockt\"{a}schel, S.~Riedel, and D.~Kiela.
+Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks.
+In \emph{Proc.\ NeurIPS}, 2020.
 
 \end{thebibliography}
 
